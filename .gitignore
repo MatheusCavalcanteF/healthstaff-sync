@@ -1,0 +1,75 @@
+# ==============================================================
+# Dados sensíveis (LGPD)
+# Escalas, relatórios do Two e espelhos de ponto contêm nomes,
+# matrículas, COREN e CPF. Nunca versionar arquivos reais.
+# Testes geram arquivos sintéticos em diretórios temporários.
+# ==============================================================
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+*.pdf
+*.ods
+uploads/
+dados/
+data/
+# Fixtures sintéticas, se um dia forem versionadas, ficam aqui:
+!**/tests/fixtures/sinteticos/**
+
+# ==============================================================
+# Segredos e configuração local
+# ==============================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ==============================================================
+# Python / FastAPI
+# ==============================================================
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+venv/
+.venv/
+env/
+.python-version
+
+# Testes e ferramentas
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.tox/
+
+# ==============================================================
+# Java / Spring Boot (java-backend)
+# ==============================================================
+target/
+.gradle/
+*.class
+*.jar
+!**/gradle/wrapper/gradle-wrapper.jar
+.mvn/wrapper/maven-wrapper.jar
+
+# ==============================================================
+# IDEs e sistema operacional
+# ==============================================================
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
