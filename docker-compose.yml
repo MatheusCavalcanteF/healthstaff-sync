@@ -1,0 +1,39 @@
+# Execução local do microsserviço de extração.
+#
+#   docker compose up --build -d     # sobe em segundo plano
+#   docker compose ps                # STATUS deve chegar a "healthy"
+#   docker compose logs -f extractor
+#   docker compose down
+#
+# Variáveis opcionais: copie .env.example para .env e ajuste.
+
+name: healthstaff
+
+services:
+  extractor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: healthstaff/extractor:local
+    container_name: healthstaff-extractor
+    environment:
+      # Vazio = sem autenticação (apenas desenvolvimento local).
+      EXTRACTOR_API_KEY: ${EXTRACTOR_API_KEY:-}
+      EXTRACTOR_MAX_UPLOAD_MB: ${EXTRACTOR_MAX_UPLOAD_MB:-20}
+    ports:
+      # Publicado só em localhost: serviço interno, o Java é quem chama.
+      - "127.0.0.1:${EXTRACTOR_PORTA_LOCAL:-8000}:8000"
+    # Endurecimento: sistema de arquivos só leitura; uploads vão para /tmp
+    # em memória e somem com o container (nada de dados pessoais em disco).
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+    restart: unless-stopped

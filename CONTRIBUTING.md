@@ -27,8 +27,10 @@
 - **Configuração do extrator:** `EXTRACTOR_API_KEY` (exige `X-API-Key`), `EXTRACTOR_MAX_UPLOAD_MB` (padrão 20).
 
 ## Desenvolvimento (python-extractor)
+- Dependências: `requirements.txt` = produção (vai para a imagem Docker); `requirements-dev.txt` = produção + pytest/httpx2/pandas. Instalar com `pip install -r requirements-dev.txt`.
 - Testes: `venv\Scripts\python -m pytest` (a partir de `python-extractor/`).
 - API local: `uvicorn main:app --reload` -> docs em `http://127.0.0.1:8000/docs`.
+- Docker (na raiz): `docker compose up --build -d`; o extrator fica em `http://127.0.0.1:8000`. O `.dockerignore` é lista de permissão: arquivo novo que precise ir para a imagem tem de ser liberado explicitamente nele e copiado no `Dockerfile`.
 
 ## Dados sensíveis (LGPD)
 - Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.

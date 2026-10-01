@@ -1,0 +1,62 @@
+# ==============================================================
+# Lista de PERMISSÃO: tudo é bloqueado e só o código-fonte do
+# extrator é liberado. Qualquer arquivo novo fica fora da imagem
+# por padrão (inclusive planilhas/PDFs com dados pessoais).
+# ==============================================================
+**
+
+# --- Código do python-extractor necessário na imagem -----------
+!python-extractor/requirements.txt
+!python-extractor/main.py
+!python-extractor/api/**
+!python-extractor/extractors/**
+!python-extractor/models/**
+!python-extractor/utils/**
+!python-extractor/schema/**
+
+# ==============================================================
+# Bloqueios aplicados DEPOIS da liberação (a última regra vence):
+# mesmo dentro das pastas liberadas, nunca entram na imagem.
+# ==============================================================
+
+# Dados sensíveis (LGPD): escalas, relatórios do Two, espelhos de ponto
+**/*.xlsx
+**/*.xlsm
+**/*.xls
+**/*.ods
+**/*.csv
+**/*.pdf
+**/*.txt
+!python-extractor/requirements.txt
+**/uploads/
+**/dados/
+**/data/
+
+# Segredos
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/secrets/
+
+# Caches, ambientes virtuais e artefatos
+**/__pycache__/
+**/*.py[cod]
+**/venv/
+**/.venv/
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Testes não vão para produção
+**/tests/
+**/conftest.py
+
+# IDEs e sistema operacional
+**/.idea/
+**/.vscode/
+**/.DS_Store
+**/Thumbs.db
+**/desktop.ini
