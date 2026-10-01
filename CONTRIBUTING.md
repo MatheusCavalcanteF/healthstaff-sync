@@ -1,15 +1,35 @@
 # HealthStaff Sync - Conciliador de Escalas e Banco de Horas
 
-## Contexto do Projeto
-Sistema de gestão hospitalar para conciliar escalas manuais enviadas em PDF pelos gestores com os registros do sistema de ponto (Two em formato CSV).
+## Arquitetura e Decisões de Design
 
-## Problemas
-- Funcionários com saldo de horas altamente positivo sendo escalados para plantões extras.
-- Funcionários com saldo negativo ficando de folga.
-- Riscos trabalhistas por violação de descanso interjornada (mínimo 11h).
-- Desperdício de tempo no RH/Administrativo com conferência manual.
-- Presença de profissionais folguistas (sem setor/escala fixa) e variações na formatação dos PDFs.
+### 1. Módulo Python (python-extractor)
+- **Função:** Microsserviço interno e stateless de extração. Recebe arquivos, extrai, normaliza e devolve JSON. Não persiste arquivos nem dados e não chama o Java.
+- **Pipeline:** Ingestão -> Detecção de Layout -> Padrão Strategy de Extração -> Normalização de Siglas -> Match Fuzzy de Nomes (`rapidfuzz`) -> Validação (`pydantic`).
+- **Formatos:** escala em grade mensal (PDF ou Excel) via `GridExtractor`; Banco de Horas do Two em Excel ou CSV via `PontoExcelExtractor`/`PontoCsvExtractor` (lógica comum em `ponto_base`). Ambos os formatos de ponto devem continuar suportados.
+- **Matcher:** o `ColaboradorMatcher` infere a matrícula pelo nome, mas nunca é barreira: quem está na escala e não está no Two é exportado com `matricula` nula e uma inconsistência.
+- **Contrato:** Devolve fatos brutos/normalizados em JSON (camelCase). Não calcula regras trabalhistas. Problemas recuperáveis viram `inconsistencias` dentro do lote.
 
-## Arquitetura Básica
-- python-extractor/: Extração de PDF/CSV, tratamento de dados (pandas, pdfplumber) e envio via JSON API.
-- java-backend/: Motor de regras de negócio em Spring Boot, validação de horas, interjornada e sugestões de trocas.
+### 2. Módulo Java (java-backend)
+- **Função:** Orquestrador principal em Spring Boot: recebe uploads do frontend, autentica, chama o extrator Python, persiste e aplica o motor de regras de negócio (alertas/sugestões).
+- **Modelagem do Folguista:** No banco, o setor pertence ao `Plantao` e não ao `Colaborador`. O JSON do extrator é hierárquico (`Setor -> Colaborador -> Plantao`, com o folguista repetido em cada setor que cobre); cabe ao Java fazer esse mapeamento relacional na persistência.
+- **Regras:** Validação de Interjornada (11h), Sobreposição de Plantões, Habilitação no Setor e Saldo de Banco de Horas.
+
+### 3. Integração
+- **Fluxo:** Frontend -> Java (`POST /api/v1/importacoes/*`) -> Python (`POST /extracoes`) -> JSON -> Java persiste e valida.
+- **Endpoints do Java (expostos ao frontend):**
+  - `POST /api/v1/importacoes/escalas`
+  - `POST /api/v1/importacoes/ponto`
+- **Endpoints do Python (internos, só o Java chama):**
+  - `POST /extracoes`: multipart com `escala` e/ou `banco_horas` e `data_referencia_ponto` opcional. Processa os dois na mesma requisição: o Banco de Horas é extraído primeiro e serve de cadastro para o matcher resolver as matrículas da escala.
+  - `GET /schema`: JSON Schema da resposta. Versionado em `python-extractor/schema/resultado-extracao.schema.json` (regenerar com `python -m api.schema`).
+  - `GET /health`.
+- **Erros:** formato único `ErroApi` (`codigo`, `mensagem`, `campo`, `arquivo`); falha em um arquivo derruba a requisição inteira (sem lote parcial).
+- **Configuração do extrator:** `EXTRACTOR_API_KEY` (exige `X-API-Key`), `EXTRACTOR_MAX_UPLOAD_MB` (padrão 20).
+
+## Desenvolvimento (python-extractor)
+- Testes: `venv\Scripts\python -m pytest` (a partir de `python-extractor/`).
+- API local: `uvicorn main:app --reload` -> docs em `http://127.0.0.1:8000/docs`.
+
+## Dados sensíveis (LGPD)
+- Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.
+- `tests/test_arquivos_reais.py` valida só invariantes e é pulado quando os arquivos reais não estão presentes.
