@@ -1,0 +1,696 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CodigoInconsistencia": {
+      "description": "Problemas detectados durante a extração (não regras de negócio).\n\nValidações como interjornada e saldo de banco de horas são\nresponsabilidade do java-backend.",
+      "enum": [
+        "LAYOUT_NAO_RECONHECIDO",
+        "PERIODO_NAO_IDENTIFICADO",
+        "SETOR_NAO_IDENTIFICADO",
+        "CELULA_ILEGIVEL",
+        "CODIGO_TURNO_DESCONHECIDO",
+        "DATA_INVALIDA",
+        "COLABORADOR_SEM_MATRICULA",
+        "COLABORADOR_NAO_RECONHECIDO",
+        "COLABORADOR_DUPLICADO",
+        "PLANTAO_DUPLICADO",
+        "MARCACAO_INCOMPLETA",
+        "MARCACAO_INVALIDA",
+        "SALDO_INVALIDO",
+        "TOTAL_DIVERGENTE",
+        "OUTRO"
+      ],
+      "title": "CodigoInconsistencia",
+      "type": "string"
+    },
+    "Colaborador": {
+      "additionalProperties": false,
+      "properties": {
+        "matricula": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Pode faltar no PDF; o backend tenta casar pelo nome normalizado.",
+          "title": "Matricula"
+        },
+        "nome": {
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "cargo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cargo"
+        },
+        "registroConselho": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Registro no conselho profissional (COREN, CRM...).",
+          "title": "Registroconselho"
+        },
+        "jornada": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ex.: '12x36', '40H'.",
+          "title": "Jornada"
+        },
+        "folguista": {
+          "default": false,
+          "description": "Profissional sem escala fixa (folguista/ferista), cobrindo este setor.",
+          "title": "Folguista",
+          "type": "boolean"
+        },
+        "plantoes": {
+          "items": {
+            "$ref": "#/$defs/Plantao"
+          },
+          "title": "Plantoes",
+          "type": "array"
+        },
+        "registrosPonto": {
+          "items": {
+            "$ref": "#/$defs/RegistroPonto"
+          },
+          "title": "Registrosponto",
+          "type": "array"
+        },
+        "saldoBancoHoras": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SaldoBancoHoras"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "nomeNormalizado": {
+          "readOnly": true,
+          "title": "Nomenormalizado",
+          "type": "string"
+        }
+      },
+      "required": [
+        "nome",
+        "nomeNormalizado"
+      ],
+      "title": "Colaborador",
+      "type": "object"
+    },
+    "Inconsistencia": {
+      "additionalProperties": false,
+      "description": "Problema encontrado na extração, para revisão humana no RH.",
+      "properties": {
+        "codigo": {
+          "$ref": "#/$defs/CodigoInconsistencia"
+        },
+        "severidade": {
+          "$ref": "#/$defs/Severidade"
+        },
+        "mensagem": {
+          "minLength": 1,
+          "title": "Mensagem",
+          "type": "string"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "aba": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Aba da planilha (Excel).",
+          "title": "Aba"
+        },
+        "linha": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Linha da planilha (Excel).",
+          "title": "Linha"
+        },
+        "setor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Setor"
+        },
+        "matricula": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Matricula"
+        },
+        "nomeColaborador": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nomecolaborador"
+        },
+        "data": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Data"
+        },
+        "valorBruto": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Trecho original do documento que gerou o problema.",
+          "title": "Valorbruto"
+        }
+      },
+      "required": [
+        "codigo",
+        "severidade",
+        "mensagem"
+      ],
+      "title": "Inconsistencia",
+      "type": "object"
+    },
+    "LoteImportacao": {
+      "additionalProperties": false,
+      "description": "Payload raiz enviado ao java-backend para um arquivo processado.",
+      "properties": {
+        "idLote": {
+          "format": "uuid",
+          "title": "Idlote",
+          "type": "string"
+        },
+        "versaoContrato": {
+          "const": "1.0",
+          "default": "1.0",
+          "title": "Versaocontrato",
+          "type": "string"
+        },
+        "geradoEm": {
+          "format": "date-time",
+          "title": "Geradoem",
+          "type": "string"
+        },
+        "origem": {
+          "$ref": "#/$defs/Origem"
+        },
+        "periodoInicio": {
+          "format": "date",
+          "title": "Periodoinicio",
+          "type": "string"
+        },
+        "periodoFim": {
+          "format": "date",
+          "title": "Periodofim",
+          "type": "string"
+        },
+        "setores": {
+          "items": {
+            "$ref": "#/$defs/Setor"
+          },
+          "title": "Setores",
+          "type": "array"
+        },
+        "inconsistencias": {
+          "items": {
+            "$ref": "#/$defs/Inconsistencia"
+          },
+          "title": "Inconsistencias",
+          "type": "array"
+        },
+        "totalColaboradores": {
+          "readOnly": true,
+          "title": "Totalcolaboradores",
+          "type": "integer"
+        },
+        "totalPlantoes": {
+          "readOnly": true,
+          "title": "Totalplantoes",
+          "type": "integer"
+        },
+        "possuiErros": {
+          "readOnly": true,
+          "title": "Possuierros",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "origem",
+        "periodoInicio",
+        "periodoFim",
+        "totalColaboradores",
+        "totalPlantoes",
+        "possuiErros"
+      ],
+      "title": "LoteImportacao",
+      "type": "object"
+    },
+    "Origem": {
+      "additionalProperties": false,
+      "description": "Metadados do arquivo de onde os dados foram extraídos.",
+      "properties": {
+        "tipoDocumento": {
+          "$ref": "#/$defs/TipoDocumento"
+        },
+        "nomeArquivo": {
+          "minLength": 1,
+          "title": "Nomearquivo",
+          "type": "string"
+        },
+        "hashSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "title": "Hashsha256",
+          "type": "string"
+        },
+        "tamanhoBytes": {
+          "minimum": 0,
+          "title": "Tamanhobytes",
+          "type": "integer"
+        },
+        "totalPaginas": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Totalpaginas"
+        },
+        "extrator": {
+          "minLength": 1,
+          "title": "Extrator",
+          "type": "string"
+        },
+        "versaoExtrator": {
+          "minLength": 1,
+          "title": "Versaoextrator",
+          "type": "string"
+        },
+        "processadoEm": {
+          "format": "date-time",
+          "title": "Processadoem",
+          "type": "string"
+        }
+      },
+      "required": [
+        "tipoDocumento",
+        "nomeArquivo",
+        "hashSha256",
+        "tamanhoBytes",
+        "extrator",
+        "versaoExtrator"
+      ],
+      "title": "Origem",
+      "type": "object"
+    },
+    "Plantao": {
+      "additionalProperties": false,
+      "description": "Uma marcação da escala para um colaborador em um dia.",
+      "properties": {
+        "data": {
+          "format": "date",
+          "title": "Data",
+          "type": "string"
+        },
+        "tipo": {
+          "$ref": "#/$defs/TipoMarcacao"
+        },
+        "codigoOriginal": {
+          "description": "Texto bruto da célula no PDF (ex.: 'M', 'SN', 'P12', 'F').",
+          "minLength": 1,
+          "title": "Codigooriginal",
+          "type": "string"
+        },
+        "turno": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Turno"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "inicio": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inicio"
+        },
+        "fim": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fim"
+        },
+        "pagina": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Pagina"
+        },
+        "observacao": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Ex.: folga para compensação de banco de horas.",
+          "title": "Observacao"
+        },
+        "duracaoHoras": {
+          "readOnly": true,
+          "title": "Duracaohoras",
+          "type": "number"
+        }
+      },
+      "required": [
+        "data",
+        "tipo",
+        "codigoOriginal",
+        "duracaoHoras"
+      ],
+      "title": "Plantao",
+      "type": "object"
+    },
+    "RegistroPonto": {
+      "additionalProperties": false,
+      "description": "Par entrada/saída efetivamente registrado no relógio de ponto.\n\n``data`` é a data de referência da jornada; ``entrada``/``saida`` podem\ncair no dia seguinte (plantão noturno). Um dos dois pode faltar quando a\nmarcação está incompleta (batida esquecida).",
+      "properties": {
+        "data": {
+          "format": "date",
+          "title": "Data",
+          "type": "string"
+        },
+        "entrada": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entrada"
+        },
+        "saida": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Saida"
+        },
+        "duracaoHoras": {
+          "readOnly": true,
+          "title": "Duracaohoras",
+          "type": "number"
+        }
+      },
+      "required": [
+        "data",
+        "duracaoHoras"
+      ],
+      "title": "RegistroPonto",
+      "type": "object"
+    },
+    "SaldoBancoHoras": {
+      "additionalProperties": false,
+      "description": "Saldo de banco de horas informado pelo sistema de ponto.",
+      "properties": {
+        "minutos": {
+          "description": "Positivo = crédito, negativo = débito.",
+          "title": "Minutos",
+          "type": "integer"
+        },
+        "dataReferencia": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Data a que o saldo se refere.",
+          "title": "Datareferencia"
+        },
+        "inicioApuracao": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Início da apuração do banco de horas no sistema de ponto.",
+          "title": "Inicioapuracao"
+        },
+        "horas": {
+          "readOnly": true,
+          "title": "Horas",
+          "type": "number"
+        }
+      },
+      "required": [
+        "minutos",
+        "horas"
+      ],
+      "title": "SaldoBancoHoras",
+      "type": "object"
+    },
+    "Setor": {
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Codigo"
+        },
+        "nome": {
+          "minLength": 1,
+          "title": "Nome",
+          "type": "string"
+        },
+        "colaboradores": {
+          "items": {
+            "$ref": "#/$defs/Colaborador"
+          },
+          "title": "Colaboradores",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nome"
+      ],
+      "title": "Setor",
+      "type": "object"
+    },
+    "Severidade": {
+      "enum": [
+        "INFO",
+        "AVISO",
+        "ERRO"
+      ],
+      "title": "Severidade",
+      "type": "string"
+    },
+    "TipoDocumento": {
+      "enum": [
+        "ESCALA_PDF",
+        "ESCALA_EXCEL",
+        "PONTO_EXCEL",
+        "PONTO_CSV"
+      ],
+      "title": "TipoDocumento",
+      "type": "string"
+    },
+    "TipoMarcacao": {
+      "description": "O que a célula da escala representa para o colaborador naquele dia.",
+      "enum": [
+        "PLANTAO",
+        "FOLGA",
+        "FERIAS",
+        "LICENCA",
+        "AFASTAMENTO",
+        "FALTA",
+        "DESCONHECIDO"
+      ],
+      "title": "TipoMarcacao",
+      "type": "string"
+    },
+    "Turno": {
+      "enum": [
+        "MANHA",
+        "TARDE",
+        "NOITE",
+        "DIURNO_12H",
+        "NOTURNO_12H",
+        "PLANTAO_24H",
+        "OUTRO"
+      ],
+      "title": "Turno",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Resposta de ``POST /extracoes``: um lote por arquivo enviado.",
+  "properties": {
+    "escala": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoteImportacao"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Lote da escala (grade mensal), se enviada."
+    },
+    "bancoHoras": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoteImportacao"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Lote do relatório de Banco de Horas do Two, se enviado."
+    }
+  },
+  "title": "ResultadoExtracao",
+  "type": "object"
+}

@@ -283,3 +283,23 @@ class LoteImportacao(ContratoBase):
 
     def to_json(self, **kwargs) -> str:
         return self.model_dump_json(**kwargs)
+
+
+class ResultadoExtracao(ContratoBase):
+    """Resposta de ``POST /extracoes``: um lote por arquivo enviado."""
+
+    escala: LoteImportacao | None = Field(
+        default=None, description="Lote da escala (grade mensal), se enviada."
+    )
+    banco_horas: LoteImportacao | None = Field(
+        default=None, description="Lote do relatório de Banco de Horas do Two, se enviado."
+    )
+
+
+class ErroApi(ContratoBase):
+    """Corpo de toda resposta de erro da API."""
+
+    codigo: str = Field(description="Ex.: FORMATO_NAO_RECONHECIDO, TIPO_INCOMPATIVEL.")
+    mensagem: str
+    campo: str | None = Field(default=None, description="Campo do formulário com problema.")
+    arquivo: str | None = None
