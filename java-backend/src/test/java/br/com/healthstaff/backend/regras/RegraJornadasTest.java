@@ -190,7 +190,7 @@ class RegraJornadasTest {
 	void parametrosConfiguraveis() {
 		var flexivel = new RegraJornadas(new RegrasProperties(java.time.Duration.ofHours(8),
 				java.time.Duration.ofHours(2), java.time.Duration.ofHours(24), java.time.Duration.ofHours(20),
-				java.time.Duration.ofHours(-10), null, null));
+				java.time.Duration.ofHours(-10), null, null, null));
 
 		assertThat(flexivel.avaliar(List.of(p("10 07:00", "10 19:00"), p("10 19:00", "11 07:00"),
 				p("11 16:00", "11 22:00")), OUTUBRO)).isEmpty();

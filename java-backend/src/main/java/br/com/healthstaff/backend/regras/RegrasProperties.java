@@ -22,6 +22,9 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
  * @param cargasMensais                carga mensal por jornada (chave normalizada, ex.: "12X36");
  *                                     jornadas "NNH" (semanais) usam NN x 5 se não estiverem aqui
  * @param folgaOrganizacional          crédito das folgas organizacionais (FG) na carga cumprida
+ * @param diasAusenciaParaZerarCarga   com férias/licença/afastamento em pelo menos tantos dias do
+ *                                     mês, a carga esperada é zero (a fração residual de 1-3 dias,
+ *                                     em geral folgas regulares, geraria débito artificial)
  */
 @ConfigurationProperties("healthstaff.regras")
 public record RegrasProperties(
@@ -31,7 +34,8 @@ public record RegrasProperties(
 		@DefaultValue("20h") Duration saldoAlto,
 		@DefaultValue("-10h") Duration saldoBaixo,
 		Map<String, Duration> cargasMensais,
-		@DefaultValue FolgaOrganizacional folgaOrganizacional) {
+		@DefaultValue FolgaOrganizacional folgaOrganizacional,
+		@DefaultValue("28") Integer diasAusenciaParaZerarCarga) {
 
 	/**
 	 * Folgas organizacionais (FG): não reduzem a carga contratual; contam como
@@ -79,12 +83,15 @@ public record RegrasProperties(
 		if (folgaOrganizacional == null) {
 			folgaOrganizacional = FolgaOrganizacional.padrao();
 		}
+		if (diasAusenciaParaZerarCarga == null) {
+			diasAusenciaParaZerarCarga = 28;
+		}
 	}
 
 	/** Padrões de produção (usados também nos testes de unidade). */
 	public static RegrasProperties padrao() {
 		return new RegrasProperties(Duration.ofHours(11), Duration.ofHours(2), Duration.ofHours(12),
-				Duration.ofHours(20), Duration.ofHours(-10), null, null);
+				Duration.ofHours(20), Duration.ofHours(-10), null, null, null);
 	}
 
 	/**

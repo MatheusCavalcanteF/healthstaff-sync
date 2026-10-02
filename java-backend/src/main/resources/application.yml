@@ -48,6 +48,7 @@ healthstaff:
     saldo-baixo: -10h
     cargas-mensais:                       # jornadas "NNH" usam NN x 5 (divisor CLT)
       12X36: 180h
+    dias-ausencia-para-zerar-carga: 28    # férias/licença/afastamento >= isso no mês: carga esperada 0
     folga-organizacional:                 # FG não reduz a carga: credita jornada cumprida
       credito-por-folga: 12h
       enfermeiro: 2                       # FGs creditáveis por mês

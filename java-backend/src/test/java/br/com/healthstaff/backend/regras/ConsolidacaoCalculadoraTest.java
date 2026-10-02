@@ -88,6 +88,79 @@ class ConsolidacaoCalculadoraTest {
 			assertThat(r.achados()).isEmpty();
 		}
 
+		/** Férias de {@code primeiro} a {@code ultimo} de outubro; os demais dias, folga regular (X). */
+		static List<MarcacaoDia> ferias(int primeiro, int ultimo) {
+			var marcacoes = new ArrayList<MarcacaoDia>();
+			for (int dia = 1; dia <= 31; dia++) {
+				marcacoes.add(dia >= primeiro && dia <= ultimo
+						? marcacao(dia, "FERIAS", "FÉRIAS A PARTIR DE 02/10/2026 ATÉ 31/10/2026", null)
+						: marcacao(dia, "FOLGA", "X", null));
+			}
+			return marcacoes;
+		}
+
+		@Test
+		void feriasQuaseOMesTodoZeramACargaSemDebitoArtificial() {
+			// Caso real: X no dia 1 e férias de 02 a 31 (30 dias). Antes: carga de 5h e débito de -5h.
+			var r = calculadora.consolidar(1, "12x36", ENFERMEIRA, ferias(2, 31), saldo(-30), OUTUBRO);
+
+			assertThat(r.diasAusencia()).isEqualTo(30);
+			assertThat(r.minutosEsperados()).isZero();
+			assertThat(r.diferencaMinutos()).isZero();
+			assertThat(r.saldoProjetadoMinutos()).isEqualTo(-30 * 60);
+			assertThat(r.achados()).isEmpty();
+		}
+
+		@ParameterizedTest(name = "{0} dias de ausência -> carga esperada {1} min")
+		@CsvSource({
+				"28, 0", // limite: zera
+				"29, 0",
+				"31, 0",
+				"27, 1394", // abaixo do limite: proporcional (180h x 4/31)
+				"15, 5574", // 180h x 16/31
+		})
+		void limiteParaZerarACarga(int diasAusencia, int esperados) {
+			var r = calculadora.consolidar(1, "12x36", ENFERMEIRA, ferias(1, diasAusencia), saldo(0), OUTUBRO);
+
+			assertThat(r.diasAusencia()).isEqualTo(diasAusencia);
+			assertThat(r.minutosEsperados()).isEqualTo(esperados);
+		}
+
+		@Test
+		void plantaoTrabalhadoNoMesDeFeriasContaComoCumprido() {
+			var marcacoes = new ArrayList<>(ferias(1, 29));
+			marcacoes.add(plantao(31));
+
+			var r = calculadora.consolidar(1, "12x36", ENFERMEIRA, marcacoes, saldo(0), OUTUBRO);
+
+			assertThat(r.minutosEsperados()).isZero();
+			assertThat(r.minutosCumpridos()).isEqualTo(12 * 60);
+			assertThat(r.diferencaMinutos()).isEqualTo(12 * 60);
+		}
+
+		@Test
+		void fevereiroInteiroDeLicenca() {
+			var marcacoes = new ArrayList<MarcacaoDia>();
+			for (int dia = 1; dia <= 28; dia++) {
+				marcacoes.add(new MarcacaoDia(1, LocalDate.of(2027, 2, dia), "LICENCA", "LM", null, null, null));
+			}
+
+			var r = calculadora.consolidar(1, "12x36", ENFERMEIRA, marcacoes, saldo(0), YearMonth.of(2027, 2));
+
+			assertThat(r.minutosEsperados()).isZero();
+		}
+
+		@Test
+		void limiteConfiguravel() {
+			var regras = new RegrasProperties(Duration.ofHours(11), Duration.ofHours(2), Duration.ofHours(12),
+					Duration.ofHours(20), Duration.ofHours(-10), null, null, 31);
+
+			var r = new ConsolidacaoCalculadora(regras)
+					.consolidar(1, "12x36", ENFERMEIRA, ferias(2, 31), saldo(0), OUTUBRO);
+
+			assertThat(r.minutosEsperados()).isEqualTo((int) Math.round(180 * 60 / 31.0));
+		}
+
 		@Test
 		void faltaNaoReduzACargaEsperada() {
 			var marcacoes = new ArrayList<>(plantoes(14));
@@ -206,7 +279,7 @@ class ConsolidacaoCalculadoraTest {
 		void cargaConfiguradaSobrepoeAPadrao() {
 			var regras = new RegrasProperties(Duration.ofHours(11), Duration.ofHours(2), Duration.ofHours(12),
 					Duration.ofHours(20), Duration.ofHours(-10),
-					java.util.Map.of("12x36", Duration.ofHours(192), "6X1", Duration.ofHours(220)), null);
+					java.util.Map.of("12x36", Duration.ofHours(192), "6X1", Duration.ofHours(220)), null, null);
 
 			assertThat(regras.cargaMensal("12X36")).contains(Duration.ofHours(192));
 			assertThat(regras.cargaMensal("6x1")).contains(Duration.ofHours(220));
@@ -324,7 +397,7 @@ class ConsolidacaoCalculadoraTest {
 		void cotasECreditoConfiguraveis() {
 			var regras = new RegrasProperties(Duration.ofHours(11), Duration.ofHours(2), Duration.ofHours(12),
 					Duration.ofHours(20), Duration.ofHours(-10), null,
-					new RegrasProperties.FolgaOrganizacional(Duration.ofHours(6), 3, 2, 0, 0));
+					new RegrasProperties.FolgaOrganizacional(Duration.ofHours(6), 3, 2, 0, 0), null);
 
 			var r = new ConsolidacaoCalculadora(regras)
 					.consolidar(1, "12x36", TECNICA, comFg(14, 2, 4, 6), saldo(0), OUTUBRO);

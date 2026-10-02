@@ -23,7 +23,8 @@ import java.util.List;
  * creditada, para não esconder débito de horas.
  *
  * <p>Férias, licença e afastamento reduzem a carga esperada proporcionalmente
- * aos dias. Não há batidas de ponto (o Two exporta só o saldo): a comparação é
+ * aos dias; com {@code diasAusenciaParaZerarCarga} (28) dias ou mais, a carga
+ * esperada do mês é zero. Não há batidas de ponto (o Two exporta só o saldo): a comparação é
  * entre o planejado na escala e o contrato, projetando o saldo no fim do mês.
  */
 public final class ConsolidacaoCalculadora {
@@ -83,10 +84,7 @@ public final class ConsolidacaoCalculadora {
 		int cumpridos = escalados + creditoFg;
 
 		Integer esperados = regras.cargaMensal(jornada)
-				.map(carga -> {
-					int diasMes = competencia.lengthOfMonth();
-					return (int) Math.round(carga.toMinutes() * (double) (diasMes - diasAusencia) / diasMes);
-				})
+				.map(carga -> cargaEsperada(carga.toMinutes(), diasAusencia, competencia))
 				.orElse(null);
 		Integer diferenca = esperados == null ? null : cumpridos - esperados;
 		Integer saldoMinutos = saldo == null ? null : saldo.minutos();
@@ -125,6 +123,19 @@ public final class ConsolidacaoCalculadora {
 		return new Resultado(colaboradorId, jornada, categoria, escalados, folgasOrganizacionais, creditadas, creditoFg,
 				cumpridos, esperados, diferenca, saldoMinutos, saldo == null ? null : saldo.dataReferencia(), projetado,
 				plantoes, diasAusencia, folgasBh.size(), List.copyOf(achados));
+	}
+
+	/**
+	 * Carga contratual proporcional aos dias sem ausência justificada. Ausente
+	 * quase o mês todo, a sobra (1-3 dias, em geral folgas regulares da escala)
+	 * não vira expectativa de trabalho: a carga do mês é zero.
+	 */
+	private int cargaEsperada(long cargaMensalMinutos, int diasAusencia, YearMonth competencia) {
+		int diasMes = competencia.lengthOfMonth();
+		if (diasAusencia >= Math.min(regras.diasAusenciaParaZerarCarga(), diasMes)) {
+			return 0;
+		}
+		return (int) Math.round(cargaMensalMinutos * (double) (diasMes - diasAusencia) / diasMes);
 	}
 
 	/** "192h cumpridas = 180h de plantão + 12h de 1 FG; 180h previstas". */
