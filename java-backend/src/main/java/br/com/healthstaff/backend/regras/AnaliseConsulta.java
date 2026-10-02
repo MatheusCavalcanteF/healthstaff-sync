@@ -1,10 +1,11 @@
 package br.com.healthstaff.backend.regras;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -12,75 +13,109 @@ import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import br.com.healthstaff.backend.colaborador.Colaborador;
 import br.com.healthstaff.backend.colaborador.ColaboradorRepository;
-import br.com.healthstaff.backend.regras.Analise.Gatilho;
+import br.com.healthstaff.backend.escala.PlantaoRepository;
+import br.com.healthstaff.backend.regras.InconformidadeResposta.Pessoa;
+import br.com.healthstaff.backend.regras.InconformidadeResposta.PlantaoResumo;
 import br.com.healthstaff.backend.regras.TipoInconformidade.Gravidade;
 
-/** Leitura da análise vigente de uma competência, com nomes para exibição. */
+/** Leitura da análise vigente de uma competência para o frontend. */
 @Service
 public class AnaliseConsulta {
 
-	public record PessoaResumo(long id, String matricula, String nome) {
-
-		static PessoaResumo de(Colaborador c) {
-			return new PessoaResumo(c.getId(), c.getMatricula(), c.getNome());
-		}
-	}
-
-	public record ItemInconformidade(long id, TipoInconformidade tipo, Gravidade gravidade, LocalDate data,
-			PessoaResumo colaborador, Long plantaoId, Long plantaoRelacionadoId, Integer valorMinutos,
-			Integer limiteMinutos, String descricao) {
-	}
-
-	/** {@code minutosCumpridos} = {@code minutosEscalados} (plantão) + {@code minutosCreditoFg}. */
-	public record ItemConsolidacao(PessoaResumo colaborador, String jornada, String categoria, int minutosEscalados,
-			int folgasOrganizacionais, int folgasOrganizacionaisCreditadas, int minutosCreditoFg, int minutosCumpridos,
-			Integer minutosEsperados, Integer diferencaMinutos, Integer saldoMinutos, LocalDate saldoDataReferencia,
-			Integer saldoProjetadoMinutos, int plantoes, int diasAusencia, int folgasBancoHoras) {
-	}
-
-	public record DetalheAnalise(long id, YearMonth competencia, Instant executadaEm, Gatilho gatilho,
-			int colaboradoresAnalisados, int totalInconformidades, List<ItemInconformidade> inconformidades,
-			List<ItemConsolidacao> consolidacao) {
+	/** Filtros opcionais da lista de inconformidades (nulo = todos). */
+	public record Filtros(TipoInconformidade tipo, Gravidade gravidade, Long colaboradorId) {
 	}
 
 	private final AnaliseRepository analises;
 	private final InconformidadeRepository inconformidades;
 	private final ConsolidacaoHorasRepository consolidacoes;
 	private final ColaboradorRepository colaboradores;
+	private final PlantaoRepository plantoes;
+	private final RegrasProperties regras;
 
 	public AnaliseConsulta(AnaliseRepository analises, InconformidadeRepository inconformidades,
-			ConsolidacaoHorasRepository consolidacoes, ColaboradorRepository colaboradores) {
+			ConsolidacaoHorasRepository consolidacoes, ColaboradorRepository colaboradores, PlantaoRepository plantoes,
+			RegrasProperties regras) {
 		this.analises = analises;
 		this.inconformidades = inconformidades;
 		this.consolidacoes = consolidacoes;
 		this.colaboradores = colaboradores;
+		this.plantoes = plantoes;
+		this.regras = regras;
 	}
 
 	@Transactional(readOnly = true)
-	public DetalheAnalise vigente(YearMonth competencia) {
-		var analise = analises.findByCompetenciaAndVigenteTrue(competencia.atDay(1))
-				.orElseThrow(() -> new AnaliseNaoEncontradaException(competencia));
+	public AnaliseResumo resumo(YearMonth competencia) {
+		var analise = vigente(competencia);
 		var alertas = inconformidades.findByAnaliseIdOrderByDataAscColaboradorIdAscIdAsc(analise.getId());
-		var horas = consolidacoes.findByAnaliseIdOrderByColaboradorId(analise.getId());
 
-		Map<Long, PessoaResumo> pessoas = colaboradores.findAllById(Stream.concat(
-				alertas.stream().map(Inconformidade::getColaboradorId),
-				horas.stream().map(ConsolidacaoHoras::getColaboradorId)).distinct().toList())
-				.stream().map(PessoaResumo::de)
-				.collect(Collectors.toMap(PessoaResumo::id, Function.identity()));
+		var porGravidade = new EnumMap<Gravidade, Long>(Gravidade.class);
+		for (var gravidade : Gravidade.values()) {
+			porGravidade.put(gravidade, 0L);
+		}
+		var porTipo = new EnumMap<TipoInconformidade, Long>(TipoInconformidade.class);
+		for (var tipo : TipoInconformidade.values()) {
+			porTipo.put(tipo, 0L);
+		}
+		alertas.forEach(a -> {
+			porGravidade.merge(a.getGravidade(), 1L, Long::sum);
+			porTipo.merge(a.getTipo(), 1L, Long::sum);
+		});
+		int afetados = (int) alertas.stream().map(Inconformidade::getColaboradorId).distinct().count();
 
-		return new DetalheAnalise(analise.getId(), analise.getCompetencia(), analise.getExecutadaEm(),
-				analise.getGatilho(), analise.getColaboradoresAnalisados(), analise.getTotalInconformidades(),
-				alertas.stream().map(i -> new ItemInconformidade(i.getId(), i.getTipo(), i.getGravidade(), i.getData(),
-						pessoas.get(i.getColaboradorId()), i.getPlantaoId(), i.getPlantaoRelacionadoId(),
-						i.getValorMinutos(), i.getLimiteMinutos(), i.getDescricao())).toList(),
-				horas.stream().map(c -> new ItemConsolidacao(pessoas.get(c.getColaboradorId()), c.getJornada(),
-						c.getCategoria(), c.getMinutosEscalados(), c.getFolgasOrganizacionais(),
-						c.getFolgasOrganizacionaisCreditadas(), c.getMinutosCreditoFg(), c.getMinutosCumpridos(),
-						c.getMinutosEsperados(), c.getDiferencaMinutos(), c.getSaldoMinutos(),
-						c.getSaldoDataReferencia(), c.getSaldoProjetadoMinutos(), c.getPlantoes(), c.getDiasAusencia(),
-						c.getFolgasBancoHoras())).toList());
+		var t = consolidacoes.totais(analise.getId(), (int) regras.saldoAlto().toMinutes(),
+				(int) regras.saldoBaixo().toMinutes());
+		var horas = new AnaliseResumo.Horas(t.minutosEscalados(), t.minutosCreditoFg(), t.minutosCumpridos(),
+				t.minutosEsperados(), t.diferencaMinutos(), (int) t.abaixo(), (int) t.naCarga(), (int) t.acima(),
+				(int) t.semCarga(), (int) t.comSaldo(), (int) t.saldoAlto(), (int) t.saldoBaixo(), t.saldoMinutos(),
+				t.saldoProjetadoMinutos());
+
+		return new AnaliseResumo(analise.getId(), analise.getCompetencia(), analise.getExecutadaEm(),
+				analise.getGatilho(), analise.getImportacaoId(), analise.getColaboradoresAnalisados(),
+				new AnaliseResumo.Alertas(alertas.size(), afetados, porGravidade, porTipo), horas);
+	}
+
+	/** Mais graves primeiro; depois por data e nome. */
+	@Transactional(readOnly = true)
+	public List<InconformidadeResposta> inconformidades(YearMonth competencia, Filtros filtros) {
+		var analise = vigente(competencia);
+		var alertas = inconformidades.findByAnaliseIdOrderByDataAscColaboradorIdAscIdAsc(analise.getId()).stream()
+				.filter(a -> filtros.tipo() == null || a.getTipo() == filtros.tipo())
+				.filter(a -> filtros.gravidade() == null || a.getGravidade() == filtros.gravidade())
+				.filter(a -> filtros.colaboradorId() == null || a.getColaboradorId().equals(filtros.colaboradorId()))
+				.toList();
+
+		var pessoas = colaboradores.findAllById(ids(alertas.stream().map(Inconformidade::getColaboradorId))).stream()
+				.map(Pessoa::de)
+				.collect(Collectors.toMap(Pessoa::id, Function.identity()));
+		var plantoesEnvolvidos = plantoes.findComSetorByIdIn(ids(alertas.stream()
+						.flatMap(a -> Stream.of(a.getPlantaoId(), a.getPlantaoRelacionadoId()))))
+				.stream().map(PlantaoResumo::de)
+				.collect(Collectors.toMap(PlantaoResumo::id, Function.identity()));
+
+		return alertas.stream()
+				.map(a -> new InconformidadeResposta(a.getId(), a.getTipo(), a.getGravidade(), a.getData(),
+						pessoas.get(a.getColaboradorId()), buscar(plantoesEnvolvidos, a.getPlantaoId()),
+						buscar(plantoesEnvolvidos, a.getPlantaoRelacionadoId()), a.getValorMinutos(),
+						a.getLimiteMinutos(), a.getDescricao()))
+				.sorted(Comparator.comparing(InconformidadeResposta::gravidade)
+						.thenComparing(InconformidadeResposta::data)
+						.thenComparing(r -> r.colaborador() == null ? "" : r.colaborador().nome())
+						.thenComparing(InconformidadeResposta::id))
+				.toList();
+	}
+
+	private Analise vigente(YearMonth competencia) {
+		return analises.findByCompetenciaAndVigenteTrue(competencia.atDay(1))
+				.orElseThrow(() -> new AnaliseNaoEncontradaException(competencia));
+	}
+
+	private static List<Long> ids(Stream<Long> ids) {
+		return ids.filter(Objects::nonNull).distinct().toList();
+	}
+
+	private static PlantaoResumo buscar(Map<Long, PlantaoResumo> plantoes, Long id) {
+		return id == null ? null : plantoes.get(id);
 	}
 }

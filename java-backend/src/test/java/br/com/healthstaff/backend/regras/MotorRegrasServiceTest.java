@@ -288,21 +288,110 @@ class MotorRegrasServiceTest extends IntegracaoComBanco {
 	@Nested
 	class Api {
 
-		@Test
-		void consultaAAnaliseVigenteComNomes() throws Exception {
+		/** Um alerta de cada gravidade: sobreposição (CRÍTICA), interjornada (ALTA), saldo alto (MÉDIA). */
+		void mesComTresGravidades() {
+			criarOutroSetorComEscalaVigente("UTI NEONATAL");
+			inserirPlantao(vania, "2026-10-03 19:00", "2026-10-04 07:00", "UTI NEONATAL");
 			inserirPlantao(recem, "2026-10-03 03:00", "2026-10-03 06:00");
 			motor.analisar(OUTUBRO, Gatilho.MANUAL, null).orElseThrow();
+		}
+
+		@Test
+		void resumoDoMesComContagensEHoras() throws Exception {
+			mesComTresGravidades();
+			var soma = jdbc.queryForMap("""
+					select sum(c.minutos_escalados) escalados, sum(c.minutos_cumpridos) cumpridos,
+					       sum(c.minutos_esperados) esperados, sum(c.diferenca_minutos) diferenca,
+					       sum(c.saldo_minutos) saldo, sum(c.saldo_projetado_minutos) projetado
+					from consolidacao_horas c join analise a on a.id = c.analise_id where a.vigente""");
 
 			mvc.perform(get("/api/v1/analises/2026-10"))
 					.andExpect(status().isOk())
 					.andExpect(jsonPath("$.competencia").value("2026-10"))
 					.andExpect(jsonPath("$.gatilho").value("MANUAL"))
-					.andExpect(jsonPath("$.consolidacao", hasSize(2)))
-					.andExpect(jsonPath("$.inconformidades[?(@.tipo == 'INTERJORNADA')].colaborador.nome")
-							.value("RECEM CONTRATADA"))
-					.andExpect(jsonPath("$.inconformidades[?(@.tipo == 'INTERJORNADA')].gravidade").value("ALTA"))
-					.andExpect(jsonPath("$.inconformidades[?(@.tipo == 'SALDO_POSITIVO_ESCALA_ACIMA')].colaborador.matricula")
-							.value("90002"));
+					.andExpect(jsonPath("$.colaboradoresAnalisados").value(2))
+					.andExpect(jsonPath("$.inconformidades.total").value(3))
+					.andExpect(jsonPath("$.inconformidades.colaboradoresAfetados").value(2))
+					.andExpect(jsonPath("$.inconformidades.porGravidade.CRITICA").value(1))
+					.andExpect(jsonPath("$.inconformidades.porGravidade.ALTA").value(1))
+					.andExpect(jsonPath("$.inconformidades.porGravidade.MEDIA").value(1))
+					// Todos os tipos aparecem, inclusive com zero.
+					.andExpect(jsonPath("$.inconformidades.porTipo.*", hasSize(TipoInconformidade.values().length)))
+					.andExpect(jsonPath("$.inconformidades.porTipo.JORNADA_EXCESSIVA").value(0))
+					.andExpect(jsonPath("$.inconformidades.porTipo.INTERJORNADA").value(1))
+					// Somas calculadas no banco batem com as linhas da consolidação.
+					.andExpect(jsonPath("$.horas.minutosEscalados").value(((Number) soma.get("escalados")).longValue()))
+					.andExpect(jsonPath("$.horas.minutosCumpridos").value(((Number) soma.get("cumpridos")).longValue()))
+					.andExpect(jsonPath("$.horas.minutosEsperados").value(((Number) soma.get("esperados")).longValue()))
+					.andExpect(jsonPath("$.horas.diferencaMinutos").value(((Number) soma.get("diferenca")).longValue()))
+					.andExpect(jsonPath("$.horas.saldoMinutos").value(((Number) soma.get("saldo")).longValue()))
+					.andExpect(jsonPath("$.horas.saldoProjetadoMinutos").value(((Number) soma.get("projetado")).longValue()))
+					.andExpect(jsonPath("$.horas.colaboradoresAcimaDaCarga").value(2))
+					.andExpect(jsonPath("$.horas.colaboradoresAbaixoDaCarga").value(0))
+					.andExpect(jsonPath("$.horas.colaboradoresSemCargaDefinida").value(0))
+					.andExpect(jsonPath("$.horas.colaboradoresComSaldo").value(1)) // RECEM não está no Two
+					.andExpect(jsonPath("$.horas.colaboradoresSaldoAlto").value(1));
+		}
+
+		@Test
+		void inconformidadesMaisGravesPrimeiroComPlantoesESetores() throws Exception {
+			mesComTresGravidades();
+
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades"))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$", hasSize(3)))
+					.andExpect(jsonPath("$[0].gravidade").value("CRITICA"))
+					.andExpect(jsonPath("$[0].tipo").value("SOBREPOSICAO_PLANTOES"))
+					.andExpect(jsonPath("$[0].colaborador.matricula").value("90002"))
+					.andExpect(jsonPath("$[0].colaborador.provisorio").value(false))
+					.andExpect(jsonPath("$[0].plantao.setor").value("UTI NEONATAL"))
+					.andExpect(jsonPath("$[0].plantaoRelacionado.setor").value("UTI PEDIÁTRICA"))
+					.andExpect(jsonPath("$[0].plantao.inicio").value(containsString("2026-10-03T19:00")))
+					.andExpect(jsonPath("$[1].gravidade").value("ALTA"))
+					.andExpect(jsonPath("$[1].tipo").value("INTERJORNADA"))
+					.andExpect(jsonPath("$[1].colaborador.nome").value("RECEM CONTRATADA"))
+					.andExpect(jsonPath("$[1].colaborador.provisorio").value(true))
+					.andExpect(jsonPath("$[1].plantao.inicio").value(containsString("2026-10-03T03:00")))
+					.andExpect(jsonPath("$[1].plantaoRelacionado.codigoOriginal").value("PD"))
+					.andExpect(jsonPath("$[1].valorMinutos").value(8 * 60))
+					.andExpect(jsonPath("$[1].limiteMinutos").value(11 * 60))
+					.andExpect(jsonPath("$[2].gravidade").value("MEDIA"))
+					.andExpect(jsonPath("$[2].tipo").value("SALDO_POSITIVO_ESCALA_ACIMA"))
+					.andExpect(jsonPath("$[2].plantao").doesNotExist());
+		}
+
+		@Test
+		void filtrosCombinaveis() throws Exception {
+			mesComTresGravidades();
+
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades").param("gravidade", "CRITICA"))
+					.andExpect(jsonPath("$", hasSize(1)))
+					.andExpect(jsonPath("$[0].tipo").value("SOBREPOSICAO_PLANTOES"));
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades").param("tipo", "INTERJORNADA"))
+					.andExpect(jsonPath("$", hasSize(1)))
+					.andExpect(jsonPath("$[0].colaborador.nome").value("RECEM CONTRATADA"));
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades").param("colaboradorId", String.valueOf(vania)))
+					.andExpect(jsonPath("$", hasSize(2)));
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades")
+					.param("tipo", "INTERJORNADA").param("colaboradorId", String.valueOf(vania)))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$", hasSize(0)));
+		}
+
+		@Test
+		void filtroInvalido() throws Exception {
+			motor.analisar(OUTUBRO, Gatilho.MANUAL, null).orElseThrow();
+
+			mvc.perform(get("/api/v1/analises/2026-10/inconformidades").param("gravidade", "URGENTE"))
+					.andExpect(status().isBadRequest())
+					.andExpect(jsonPath("$.codigo").value("PARAMETRO_INVALIDO"));
+		}
+
+		@Test
+		void inconformidadesDeMesSemAnalise() throws Exception {
+			mvc.perform(get("/api/v1/analises/2025-01/inconformidades"))
+					.andExpect(status().isNotFound())
+					.andExpect(jsonPath("$.codigo").value("ANALISE_NAO_ENCONTRADA"));
 		}
 
 		@Test

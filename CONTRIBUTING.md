@@ -46,12 +46,16 @@
 - Colaborador sem matrícula = cadastro provisório (único por nome normalizado), promovido quando a matrícula aparece no Two. `ColaboradorResolver` só usa igualdade exata de nome; homônimos nunca são adivinhados (o fuzzy é no extrator).
 - O Two é a fonte oficial de nome/matrícula; a escala complementa cargo, COREN e jornada sem que uma fonte apague a outra.
 - Upload: limite do Java = `EXTRACTOR_MAX_UPLOAD_MB` (o mesmo do extrator). `server.tomcat.max-swallow-size` é alto de propósito: sem isso, uploads bem acima do limite derrubam a conexão em vez de receber o 413.
-- **Motor de regras** (`regras`): roda automaticamente após cada importação nova (escala ou ponto) e sob demanda em `POST /api/v1/analises/{AAAA-MM}`; `GET` devolve a análise vigente (inconformidades + consolidação). Falha na análise não desfaz a importação. Mês sem escala vigente não gera análise (422 `SEM_ESCALA_VIGENTE` no POST).
+- **Motor de regras** (`regras`): roda automaticamente após cada importação nova (escala ou ponto) e sob demanda em `POST /api/v1/analises/{AAAA-MM}` (consulta: ver API de leitura abaixo). Falha na análise não desfaz a importação. Mês sem escala vigente não gera análise (422 `SEM_ESCALA_VIGENTE` no POST).
   - Regras puras e testáveis sem Spring: `RegraJornadas` (interjornada 11h, sobreposição, jornada excessiva) e `ConsolidacaoCalculadora` (escalado x carga x saldo do Two). Parâmetros em `healthstaff.regras.*`.
   - Avaliação por pessoa, somando todos os setores (folguista); plantões com pausa de até 2h = uma jornada (M/T, dobra PD+PN -> alerta de jornada excessiva, não de interjornada). Cada alerta pertence ao mês do plantão que o causa (virada do mês sem duplicar).
   - Sem batidas de ponto, a "consolidação" compara a **carga cumprida = horas de plantão + crédito de FG** com a carga contratual (12x36 = 180h; "NNH" = NN x 5) reduzida só por férias/licença/afastamento (proporcional aos dias; com 28 dias ou mais de ausência no mês, `dias-ausencia-para-zerar-carga`, a carga esperada é zero), e projeta o saldo do Two.
   - **Folga organizacional (FG) é crédito de jornada, não redução de carga:** 12h por FG, até a cota mensal da categoria (enfermeiro(a) 2; técnico(a) de enfermagem e administrativo 1; cargo não reconhecido 1). FG além da cota não credita. Categoria deduzida do cargo da escala (`CategoriaProfissional`).
   - Análises versionadas por competência (uma vigente); `inconformidade` (regra de negócio) é separada de `inconsistencia` (extração).
+- **API de leitura (frontend):**
+  - `GET /api/v1/analises/{AAAA-MM}`: resumo do mês (contagem por gravidade e tipo, sempre com todas as chaves; colaboradores afetados; horas agregadas no banco e exposição do banco de horas).
+  - `GET /api/v1/analises/{AAAA-MM}/inconformidades`: alertas, mais graves primeiro, com colaborador e plantões/setores envolvidos; filtros `tipo`, `gravidade`, `colaboradorId`.
+  - `GET /api/v1/colaboradores`: paginado (`pagina` desde 0, `tamanho` 1-200), filtros `vinculo` (OFICIAL/PROVISORIO) e `busca` (nome sem acento ou início da matrícula); traz categoria (nula se o cargo é desconhecido) e saldo mais recente do Two. Formato de página: `web.Pagina`.
 - Configuração local: um único `.env` na raiz (copiar de `.env.example`) serve ao docker compose e ao Java (`spring.config.import`). `POSTGRES_PASSWORD` é obrigatória.
 - Variáveis de ambiente compartilhadas entre os serviços usam sempre o prefixo `EXTRACTOR_` (`EXTRACTOR_URL`, `EXTRACTOR_API_KEY`): a mesma chave configura o Java e o Python.
 

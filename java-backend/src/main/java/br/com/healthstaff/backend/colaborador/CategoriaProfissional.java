@@ -1,4 +1,4 @@
-package br.com.healthstaff.backend.regras;
+package br.com.healthstaff.backend.colaborador;
 
 import java.text.Normalizer;
 import java.util.Arrays;

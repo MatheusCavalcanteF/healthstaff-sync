@@ -80,6 +80,11 @@ class ErrosApiHandler {
 		return parametro.startsWith("data") ? " (use AAAA-MM-DD)" : "";
 	}
 
+	@ExceptionHandler(ParametroInvalidoException.class)
+	ProblemDetail parametroForaDoPermitido(ParametroInvalidoException e) {
+		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido", e.getMessage(), "PARAMETRO_INVALIDO");
+	}
+
 	@ExceptionHandler(SemEscalaVigenteException.class)
 	ProblemDetail semEscala(SemEscalaVigenteException e) {
 		return problema(HttpStatus.UNPROCESSABLE_CONTENT, "Sem escala para analisar", e.getMessage(),

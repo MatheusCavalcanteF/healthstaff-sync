@@ -5,6 +5,8 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 
+import br.com.healthstaff.backend.colaborador.CategoriaProfissional;
+
 /**
  * Consolida, por colaborador e competência, a carga cumprida na escala com a
  * carga contratual e o saldo de banco de horas do Two, e aponta as
