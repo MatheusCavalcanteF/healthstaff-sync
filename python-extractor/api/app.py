@@ -106,6 +106,10 @@ def create_app(
     if tamanho_maximo_mb is None:
         tamanho_maximo_mb = int(os.environ.get("EXTRACTOR_MAX_UPLOAD_MB", TAMANHO_MAXIMO_PADRAO_MB))
     limite_bytes = tamanho_maximo_mb * _BLOCO
+    if not api_key:
+        logger.warning(
+            "EXTRACTOR_API_KEY não definida: autenticação desativada (use apenas em desenvolvimento local)"
+        )
 
     app = FastAPI(
         title="HealthStaff Sync - Extractor",
@@ -142,7 +146,12 @@ def create_app(
     def health() -> dict[str, str]:
         return {"status": "ok", "versao": VERSAO_API}
 
-    @app.get("/schema", tags=["contrato"], dependencies=[Depends(autenticar)])
+    @app.get(
+        "/schema",
+        tags=["contrato"],
+        responses={status: {"model": ErroApi} for status in (401, 422)},
+        dependencies=[Depends(autenticar)],
+    )
     def schema() -> dict:
         """JSON Schema (draft 2020-12) da resposta de ``POST /extracoes``."""
         return gerar_schema()

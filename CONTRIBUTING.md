@@ -32,6 +32,14 @@
 - API local: `uvicorn main:app --reload` -> docs em `http://127.0.0.1:8000/docs`.
 - Docker (na raiz): `docker compose up --build -d`; o extrator fica em `http://127.0.0.1:8000`. O `.dockerignore` é lista de permissão: arquivo novo que precise ir para a imagem tem de ser liberado explicitamente nele e copiado no `Dockerfile`.
 
+## Desenvolvimento (java-backend)
+- Spring Boot 4.1 / Java 25 / Maven Wrapper: `./mvnw verify` (a partir de `java-backend/`). Requer `JAVA_HOME` apontando para um JDK 25.
+- **Classes do contrato são geradas, não escritas:** o `openapi-generator` lê `python-extractor/schema/openapi.json` e gera `br.com.healthstaff.backend.extrator.contrato.*` em `target/` a cada build. Mudou o contrato no Python -> `python -m api.schema` -> o build Java reflete (ou quebra) na hora. `jsonschema2pojo` foi descartado: não entende `$defs`/`anyOf` do Draft 2020-12.
+- Geração: `DateTime` -> `LocalDateTime` (o Python envia hora local sem fuso); enums desconhecidos viram `unknown_default_open_api` (códigos novos de inconsistência não quebram), mas `versaoContrato` diferente de 1.0 é rejeitada pelo cliente.
+- Cliente: `ExtratorClient` (RestClient, HTTP/1.1, Jackson 3). Arquivo recusado -> `ExtracaoRejeitadaException` (erro do usuário, carrega o `ErroApi`); serviço fora/timeout/401/5xx/resposta fora do contrato -> `ExtratorIndisponivelException`. Saúde do extrator em `/actuator/health` (componente `extrator`).
+- Testes: `ExtratorClientTest` usa um servidor HTTP falso e a resposta-exemplo `src/test/resources/contrato/resultado-extracao.exemplo.json` (gerada pela API Python com dados fictícios e validada por um teste Python). `ExtratorE2ETest` roda contra o Python real só com `EXTRACTOR_E2E_URL` (e `EXTRACTOR_E2E_API_KEY`) definidas.
+- Variáveis de ambiente compartilhadas entre os serviços usam sempre o prefixo `EXTRACTOR_` (`EXTRACTOR_URL`, `EXTRACTOR_API_KEY`): a mesma chave configura o Java e o Python.
+
 ## Dados sensíveis (LGPD)
 - Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.
 - `tests/test_arquivos_reais.py` valida só invariantes e é pulado quando os arquivos reais não estão presentes.

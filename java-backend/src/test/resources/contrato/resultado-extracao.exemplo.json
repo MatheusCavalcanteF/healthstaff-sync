@@ -1,0 +1,899 @@
+{
+  "escala": {
+    "idLote": "eb46b99d-a921-4273-9994-f9a0f973ad6b",
+    "versaoContrato": "1.0",
+    "geradoEm": "2026-10-01T18:09:47.307724",
+    "origem": {
+      "tipoDocumento": "ESCALA_EXCEL",
+      "nomeArquivo": "escala-exemplo.xlsx",
+      "hashSha256": "e81e076f6437575064b33ca1244321187eaa9eb97d3cf2e8ecf7f6f8f2d7f02d",
+      "tamanhoBytes": 5674,
+      "totalPaginas": null,
+      "extrator": "grade-mensal",
+      "versaoExtrator": "2.0.0",
+      "processadoEm": "2026-10-01T18:09:47.305601"
+    },
+    "periodoInicio": "2026-10-01",
+    "periodoFim": "2026-10-31",
+    "setores": [
+      {
+        "codigo": null,
+        "nome": "UTI PEDIÁTRICA",
+        "colaboradores": [
+          {
+            "matricula": "90002",
+            "nome": "VANIA FICTICIA ROCHA",
+            "cargo": "Enfª Folguista Diurna",
+            "registroConselho": "100007",
+            "jornada": "12x36",
+            "folguista": true,
+            "plantoes": [
+              {
+                "data": "2026-10-01",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-01T19:00:00",
+                "fim": "2026-10-02T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-02",
+                "tipo": "FOLGA",
+                "codigoOriginal": "BH",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": "compensação de banco de horas",
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-03",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-03T19:00:00",
+                "fim": "2026-10-04T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-04",
+                "tipo": "DESCONHECIDO",
+                "codigoOriginal": "ZZ",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-05",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-05T19:00:00",
+                "fim": "2026-10-06T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-06",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-07",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-07T19:00:00",
+                "fim": "2026-10-08T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-08",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-09",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-09T19:00:00",
+                "fim": "2026-10-10T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-10",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-11",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-11T19:00:00",
+                "fim": "2026-10-12T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-12",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-13",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-13T19:00:00",
+                "fim": "2026-10-14T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-14",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-15",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-15T19:00:00",
+                "fim": "2026-10-16T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-16",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-17",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-17T19:00:00",
+                "fim": "2026-10-18T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-18",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-19",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-19T19:00:00",
+                "fim": "2026-10-20T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-20",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-21",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-21T19:00:00",
+                "fim": "2026-10-22T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-22",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-23",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-23T19:00:00",
+                "fim": "2026-10-24T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-24",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-25",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-25T19:00:00",
+                "fim": "2026-10-26T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-26",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-27",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-27T19:00:00",
+                "fim": "2026-10-28T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-28",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-29",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-29T19:00:00",
+                "fim": "2026-10-30T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-30",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-31",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PN",
+                "turno": "NOTURNO_12H",
+                "inicio": "2026-10-31T19:00:00",
+                "fim": "2026-11-01T07:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              }
+            ],
+            "registrosPonto": [],
+            "saldoBancoHoras": null,
+            "nomeNormalizado": "VANIA FICTICIA ROCHA"
+          },
+          {
+            "matricula": null,
+            "nome": "RECEM CONTRATADA",
+            "cargo": "Téc. de Enf.",
+            "registroConselho": "100008",
+            "jornada": "12x36",
+            "folguista": false,
+            "plantoes": [
+              {
+                "data": "2026-10-01",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-02",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-02T07:00:00",
+                "fim": "2026-10-02T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-03",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-04",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-04T07:00:00",
+                "fim": "2026-10-04T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-05",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-06",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-06T07:00:00",
+                "fim": "2026-10-06T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-07",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-08",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-08T07:00:00",
+                "fim": "2026-10-08T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-09",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-10",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-10T07:00:00",
+                "fim": "2026-10-10T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-11",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-12",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-12T07:00:00",
+                "fim": "2026-10-12T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-13",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-14",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-14T07:00:00",
+                "fim": "2026-10-14T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-15",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-16",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-16T07:00:00",
+                "fim": "2026-10-16T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-17",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-18",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-18T07:00:00",
+                "fim": "2026-10-18T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-19",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-20",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-20T07:00:00",
+                "fim": "2026-10-20T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-21",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-22",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-22T07:00:00",
+                "fim": "2026-10-22T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-23",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-24",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-24T07:00:00",
+                "fim": "2026-10-24T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-25",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-26",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-26T07:00:00",
+                "fim": "2026-10-26T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-27",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-28",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-28T07:00:00",
+                "fim": "2026-10-28T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-29",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              },
+              {
+                "data": "2026-10-30",
+                "tipo": "PLANTAO",
+                "codigoOriginal": "PD",
+                "turno": "DIURNO_12H",
+                "inicio": "2026-10-30T07:00:00",
+                "fim": "2026-10-30T19:00:00",
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 12.0
+              },
+              {
+                "data": "2026-10-31",
+                "tipo": "FOLGA",
+                "codigoOriginal": "X",
+                "turno": null,
+                "inicio": null,
+                "fim": null,
+                "pagina": null,
+                "observacao": null,
+                "duracaoHoras": 0.0
+              }
+            ],
+            "registrosPonto": [],
+            "saldoBancoHoras": null,
+            "nomeNormalizado": "RECEM CONTRATADA"
+          }
+        ]
+      }
+    ],
+    "inconsistencias": [
+      {
+        "codigo": "COLABORADOR_SEM_MATRICULA",
+        "severidade": "INFO",
+        "mensagem": "matrícula 90002 inferida para 'VANIA FICTICIA ROCHA' pelo cadastro 'VANIA FICTICIA ROCHA' (score 100)",
+        "pagina": null,
+        "aba": "Escala",
+        "linha": 7,
+        "setor": "UTI PEDIÁTRICA",
+        "matricula": "90002",
+        "nomeColaborador": "VANIA FICTICIA ROCHA",
+        "data": null,
+        "valorBruto": null
+      },
+      {
+        "codigo": "CODIGO_TURNO_DESCONHECIDO",
+        "severidade": "AVISO",
+        "mensagem": "sigla 'ZZ' não reconhecida",
+        "pagina": null,
+        "aba": "Escala",
+        "linha": 7,
+        "setor": "UTI PEDIÁTRICA",
+        "matricula": "90002",
+        "nomeColaborador": "VANIA FICTICIA ROCHA",
+        "data": "2026-10-04",
+        "valorBruto": "ZZ"
+      },
+      {
+        "codigo": "COLABORADOR_NAO_RECONHECIDO",
+        "severidade": "AVISO",
+        "mensagem": "'RECEM CONTRATADA' não encontrado no cadastro (mais próximos: WILMA FICTICIA PRADO (90003, 39), ZILDA FICTICIA LIMA (90005, 34), YARA FICTICIA BRAGA (90004, 34))",
+        "pagina": null,
+        "aba": "Escala",
+        "linha": 8,
+        "setor": "UTI PEDIÁTRICA",
+        "matricula": null,
+        "nomeColaborador": "RECEM CONTRATADA",
+        "data": null,
+        "valorBruto": null
+      }
+    ],
+    "totalColaboradores": 2,
+    "totalPlantoes": 31,
+    "possuiErros": false
+  },
+  "bancoHoras": {
+    "idLote": "a22d982d-c5e2-4d87-8992-6b3f6d058eeb",
+    "versaoContrato": "1.0",
+    "geradoEm": "2026-10-01T18:09:47.295732",
+    "origem": {
+      "tipoDocumento": "PONTO_EXCEL",
+      "nomeArquivo": "banco-horas-exemplo.xlsx",
+      "hashSha256": "735e4d519f0daa4978d432a96ce9bef3b590ba2cec5e627a9186c175c7ea043b",
+      "tamanhoBytes": 5267,
+      "totalPaginas": null,
+      "extrator": "ponto-two-excel",
+      "versaoExtrator": "1.0.0",
+      "processadoEm": "2026-10-01T18:09:47.295467"
+    },
+    "periodoInicio": "2026-10-01",
+    "periodoFim": "2026-10-01",
+    "setores": [
+      {
+        "codigo": null,
+        "nome": "UTI PEDIATRICA HOSPITAL EXEMPLO",
+        "colaboradores": [
+          {
+            "matricula": "90001",
+            "nome": "TEREZA FICTICIA ALVES",
+            "cargo": null,
+            "registroConselho": null,
+            "jornada": null,
+            "folguista": false,
+            "plantoes": [],
+            "registrosPonto": [],
+            "saldoBancoHoras": {
+              "minutos": 2682,
+              "dataReferencia": "2026-10-01",
+              "inicioApuracao": "2024-01-01",
+              "horas": 44.7
+            },
+            "nomeNormalizado": "TEREZA FICTICIA ALVES"
+          },
+          {
+            "matricula": "90002",
+            "nome": "VANIA FICTICIA ROCHA",
+            "cargo": null,
+            "registroConselho": null,
+            "jornada": null,
+            "folguista": false,
+            "plantoes": [],
+            "registrosPonto": [],
+            "saldoBancoHoras": {
+              "minutos": 982,
+              "dataReferencia": "2026-10-01",
+              "inicioApuracao": "2024-01-01",
+              "horas": 16.37
+            },
+            "nomeNormalizado": "VANIA FICTICIA ROCHA"
+          },
+          {
+            "matricula": "90005",
+            "nome": "ZILDA FICTICIA LIMA",
+            "cargo": null,
+            "registroConselho": null,
+            "jornada": null,
+            "folguista": false,
+            "plantoes": [],
+            "registrosPonto": [],
+            "saldoBancoHoras": {
+              "minutos": 7674,
+              "dataReferencia": "2026-10-01",
+              "inicioApuracao": "2024-01-01",
+              "horas": 127.9
+            },
+            "nomeNormalizado": "ZILDA FICTICIA LIMA"
+          }
+        ]
+      },
+      {
+        "codigo": null,
+        "nome": "HX - UTI NEONATAL",
+        "colaboradores": [
+          {
+            "matricula": "90003",
+            "nome": "WILMA FICTICIA PRADO",
+            "cargo": null,
+            "registroConselho": null,
+            "jornada": null,
+            "folguista": false,
+            "plantoes": [],
+            "registrosPonto": [],
+            "saldoBancoHoras": {
+              "minutos": 814,
+              "dataReferencia": "2026-10-01",
+              "inicioApuracao": "2024-01-01",
+              "horas": 13.57
+            },
+            "nomeNormalizado": "WILMA FICTICIA PRADO"
+          },
+          {
+            "matricula": "90004",
+            "nome": "YARA FICTICIA BRAGA",
+            "cargo": null,
+            "registroConselho": null,
+            "jornada": null,
+            "folguista": false,
+            "plantoes": [],
+            "registrosPonto": [],
+            "saldoBancoHoras": {
+              "minutos": -243,
+              "dataReferencia": "2026-10-01",
+              "inicioApuracao": "2025-05-16",
+              "horas": -4.05
+            },
+            "nomeNormalizado": "YARA FICTICIA BRAGA"
+          }
+        ]
+      }
+    ],
+    "inconsistencias": [],
+    "totalColaboradores": 5,
+    "totalPlantoes": 0,
+    "possuiErros": false
+  }
+}

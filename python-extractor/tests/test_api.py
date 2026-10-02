@@ -7,7 +7,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.app import create_app
-from api.schema import ARQUIVO_SCHEMA, gerar_schema, schema_formatado
+from api.schema import (
+    ARQUIVO_OPENAPI,
+    ARQUIVO_SCHEMA,
+    gerar_schema,
+    openapi_formatado,
+    schema_formatado,
+)
 from conftest import PaginaPdf, gerar_pdf
 from models import LoteImportacao, ResultadoExtracao
 from test_escala_excel import DIURNA, alternado, bloco, escala, pessoa
@@ -69,6 +75,24 @@ def test_schema_versionado_esta_atualizado():
     """Falha se o contrato mudou e o arquivo para o Java não foi regenerado
     (rode: python -m api.schema)."""
     assert ARQUIVO_SCHEMA.read_text(encoding="utf-8") == schema_formatado()
+
+
+def test_openapi_versionado_esta_atualizado():
+    """O java-backend gera as classes a partir deste arquivo
+    (rode: python -m api.schema)."""
+    assert ARQUIVO_OPENAPI.read_text(encoding="utf-8") == openapi_formatado()
+
+
+def test_openapi_so_documenta_o_formato_de_erro_real(cliente):
+    documento = cliente.get("/openapi.json").json()
+    # A API nunca devolve o formato de validação padrão do FastAPI.
+    assert "HTTPValidationError" not in documento["components"]["schemas"]
+    for caminho in documento["paths"].values():
+        for operacao in caminho.values():
+            for status, resposta in operacao["responses"].items():
+                if status != "200":
+                    esquema = resposta["content"]["application/json"]["schema"]
+                    assert esquema == {"$ref": "#/components/schemas/ErroApi"}
 
 
 def test_openapi_documenta_erros(cliente):
@@ -258,3 +282,38 @@ class TestAutenticacao:
         cliente = TestClient(create_app())
         assert cliente.get("/schema").status_code == 401
         assert cliente.get("/schema", headers={"X-API-Key": "do-ambiente"}).status_code == 200
+
+
+def test_exemplo_usado_pelo_java_backend_segue_o_contrato():
+    """java-backend/src/test/resources/contrato/resultado-extracao.exemplo.json é
+    uma resposta real desta API (dados fictícios) usada nos testes do cliente Java.
+    Se o contrato mudar, regenere-o junto com o openapi.json."""
+    exemplo = ARQUIVO_SCHEMA.parents[2] / "java-backend/src/test/resources/contrato/resultado-extracao.exemplo.json"
+    resultado = ResultadoExtracao.model_validate_json(exemplo.read_text(encoding="utf-8"))
+    assert resultado.escala is not None and resultado.banco_horas is not None
+
+
+def test_avisa_quando_sobe_sem_autenticacao(monkeypatch, caplog):
+    monkeypatch.delenv("EXTRACTOR_API_KEY", raising=False)
+    with caplog.at_level("WARNING", logger="api.app"):
+        create_app()
+    assert "autenticação desativada" in caplog.text
+
+    caplog.clear()
+    monkeypatch.setenv("EXTRACTOR_API_KEY", "segredo")
+    with caplog.at_level("WARNING", logger="api.app"):
+        create_app()
+    assert "autenticação desativada" not in caplog.text
+
+
+def test_main_aplica_a_chave_do_ambiente(monkeypatch):
+    """O app servido pelo uvicorn (main:app) precisa respeitar EXTRACTOR_API_KEY."""
+    import importlib
+
+    import main
+
+    monkeypatch.setenv("EXTRACTOR_API_KEY", "do-ambiente")
+    cliente = TestClient(importlib.reload(main).app)
+    assert cliente.get("/schema").status_code == 401
+    assert cliente.get("/schema", headers={"X-API-Key": "errada"}).status_code == 401
+    assert cliente.get("/schema", headers={"X-API-Key": "do-ambiente"}).status_code == 200
