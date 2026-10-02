@@ -39,6 +39,22 @@ healthstaff:
     timeout-conexao: 5s
     timeout-leitura: 120s
 
+  regras:
+    # Motor de regras (valores padrão; ajuste conforme a política do hospital).
+    descanso-minimo-interjornada: 11h     # CLT art. 66
+    intervalo-maximo-mesma-jornada: 2h    # plantões com pausa até isso = uma jornada (ex.: M/T)
+    jornada-maxima: 12h                   # acima disso, plantões emendados geram alerta (dobra)
+    saldo-alto: 20h
+    saldo-baixo: -10h
+    cargas-mensais:                       # jornadas "NNH" usam NN x 5 (divisor CLT)
+      12X36: 180h
+    folga-organizacional:                 # FG não reduz a carga: credita jornada cumprida
+      credito-por-folga: 12h
+      enfermeiro: 2                       # FGs creditáveis por mês
+      tecnico-enfermagem: 1
+      administrativo: 1
+      outros: 1                           # cargo não reconhecido
+
 management:
   endpoints:
     web:

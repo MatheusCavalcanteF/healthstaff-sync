@@ -17,6 +17,8 @@ import br.com.healthstaff.backend.extrator.ExtracaoRejeitadaException;
 import br.com.healthstaff.backend.extrator.ExtratorIndisponivelException;
 import br.com.healthstaff.backend.importacao.ArquivoInvalidoException;
 import br.com.healthstaff.backend.importacao.ImportacaoNaoEncontradaException;
+import br.com.healthstaff.backend.regras.AnaliseNaoEncontradaException;
+import br.com.healthstaff.backend.regras.SemEscalaVigenteException;
 
 /**
  * Erros da API em Problem Details (RFC 9457). Todo corpo de erro traz a
@@ -67,8 +69,26 @@ class ErrosApiHandler {
 	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
 	ProblemDetail parametroInvalido(MethodArgumentTypeMismatchException e) {
 		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido",
-				"valor inválido para '" + e.getName() + "'" + (e.getName().startsWith("data") ? " (use AAAA-MM-DD)" : ""),
+				"valor inválido para '" + e.getName() + "'" + dicaDeFormato(e.getName()),
 				"PARAMETRO_INVALIDO");
+	}
+
+	private static String dicaDeFormato(String parametro) {
+		if (parametro.equals("competencia")) {
+			return " (use AAAA-MM)";
+		}
+		return parametro.startsWith("data") ? " (use AAAA-MM-DD)" : "";
+	}
+
+	@ExceptionHandler(SemEscalaVigenteException.class)
+	ProblemDetail semEscala(SemEscalaVigenteException e) {
+		return problema(HttpStatus.UNPROCESSABLE_CONTENT, "Sem escala para analisar", e.getMessage(),
+				"SEM_ESCALA_VIGENTE");
+	}
+
+	@ExceptionHandler(AnaliseNaoEncontradaException.class)
+	ProblemDetail analiseNaoEncontrada(AnaliseNaoEncontradaException e) {
+		return problema(HttpStatus.NOT_FOUND, "Análise não encontrada", e.getMessage(), "ANALISE_NAO_ENCONTRADA");
 	}
 
 	@ExceptionHandler(ImportacaoNaoEncontradaException.class)

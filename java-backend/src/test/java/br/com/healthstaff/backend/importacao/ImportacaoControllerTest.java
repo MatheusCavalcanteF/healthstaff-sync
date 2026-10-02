@@ -219,6 +219,51 @@ class ImportacaoControllerTest extends IntegracaoComBanco {
 	}
 
 	@Nested
+	class AnaliseAutomatica {
+
+		@Test
+		void importarEscalaDisparaAAnaliseDaCompetencia() throws Exception {
+			var criada = enviarEscala().andExpect(status().isCreated()).andReturn();
+			var id = jsonMapper.readTree(criada.getResponse().getContentAsString()).get("id").asString();
+
+			var analise = jdbc.queryForMap("select * from analise where vigente");
+			assertThat(analise.get("competencia").toString()).isEqualTo("2026-10-01");
+			assertThat(analise).containsEntry("gatilho", "IMPORTACAO_ESCALA");
+			assertThat(analise.get("importacao_id").toString()).isEqualTo(id);
+			assertThat(contar("consolidacao_horas")).isEqualTo(2);
+		}
+
+		@Test
+		void importarPontoReanalisaOMesDoSaldo() throws Exception {
+			enviarEscala().andExpect(status().isCreated());
+			enviarPonto("2026-10-01").andExpect(status().isCreated());
+
+			assertThat(contar("analise")).isEqualTo(2);
+			assertThat(jdbc.queryForObject("select gatilho from analise where vigente", String.class))
+					.isEqualTo("IMPORTACAO_PONTO");
+			// Com o saldo do Two, a consolidação da VANIA passa a ter saldo e projeção.
+			assertThat(jdbc.queryForObject("select c.saldo_minutos from consolidacao_horas c "
+					+ "join analise a on a.id = c.analise_id join colaborador p on p.id = c.colaborador_id "
+					+ "where a.vigente and p.matricula = '90002'", Integer.class)).isEqualTo(982);
+		}
+
+		@Test
+		void pontoAntesDaEscalaNaoCriaAnaliseVazia() throws Exception {
+			enviarPonto("2026-10-01").andExpect(status().isCreated());
+
+			assertThat(contar("analise")).isZero();
+		}
+
+		@Test
+		void arquivoDuplicadoNaoReanalisa() throws Exception {
+			enviarEscala().andExpect(status().isCreated());
+			enviarEscala().andExpect(status().isOk());
+
+			assertThat(contar("analise")).isEqualTo(1);
+		}
+	}
+
+	@Nested
 	class Consulta {
 
 		@Test

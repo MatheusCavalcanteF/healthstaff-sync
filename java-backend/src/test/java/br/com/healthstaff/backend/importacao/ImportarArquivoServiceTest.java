@@ -3,8 +3,12 @@ package br.com.healthstaff.backend.importacao;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,9 +19,15 @@ import br.com.healthstaff.backend.colaborador.ColaboradorRepository;
 import br.com.healthstaff.backend.extrator.ExtratorClient;
 import br.com.healthstaff.backend.extrator.contrato.LoteImportacao;
 import br.com.healthstaff.backend.extrator.contrato.Origem;
+import br.com.healthstaff.backend.extrator.contrato.ResultadoExtracao;
 import br.com.healthstaff.backend.extrator.contrato.TipoDocumento;
+import br.com.healthstaff.backend.importacao.ImportacaoResposta.VersaoEscala;
+import br.com.healthstaff.backend.importacao.ImportacaoService.ResultadoImportacao;
+import br.com.healthstaff.backend.regras.Analise.Gatilho;
+import br.com.healthstaff.backend.regras.MotorRegrasService;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.mock.web.MockMultipartFile;
 
 /**
  * Upload simultâneo do mesmo arquivo: as duas requisições passam pela checagem
@@ -29,8 +39,10 @@ class ImportarArquivoServiceTest {
 	final ImportacaoService importacoes = mock(ImportacaoService.class);
 	final ImportacaoConsulta consulta = mock(ImportacaoConsulta.class);
 	final ImportacaoRepository repositorio = mock(ImportacaoRepository.class);
+	final ExtratorClient extrator = mock(ExtratorClient.class);
+	final MotorRegrasService motor = mock(MotorRegrasService.class);
 	final ImportarArquivoService servico = new ImportarArquivoService(
-			mock(ExtratorClient.class), importacoes, consulta, repositorio, mock(ColaboradorRepository.class));
+			extrator, importacoes, consulta, repositorio, mock(ColaboradorRepository.class), motor);
 
 	final String hash = "a".repeat(64);
 	final LoteImportacao lote = new LoteImportacao()
@@ -63,5 +75,21 @@ class ImportarArquivoServiceTest {
 		when(repositorio.findByTipoDocumentoAndHashSha256("ESCALA_EXCEL", hash)).thenReturn(Optional.empty());
 
 		assertThatThrownBy(() -> servico.registrar(lote)).isSameAs(violacao);
+	}
+
+	@Test
+	void falhaNaAnaliseNaoDesfazAImportacaoGravada() {
+		var id = UUID.randomUUID();
+		when(extrator.extrair(any())).thenReturn(new ResultadoExtracao().escala(lote));
+		when(importacoes.registrar(lote)).thenReturn(new ResultadoImportacao(id, "ESCALA_EXCEL", false, 0, List.of(), 0));
+		var resposta = new ImportacaoResposta(id, "ESCALA_EXCEL", "e.xlsx", false, null, null, null, 0, 0, false,
+				List.of(new VersaoEscala("UTI", LocalDate.of(2026, 10, 1), 1, true, 10)), 0, List.of());
+		when(consulta.detalhar(id, false)).thenReturn(resposta);
+		when(motor.analisar(any(), any(), any())).thenThrow(new IllegalStateException("falha simulada no motor"));
+
+		var resultado = servico.importarEscala(new MockMultipartFile("arquivo", "e.xlsx", null, new byte[] { 1 }));
+
+		assertThat(resultado).isSameAs(resposta);
+		verify(motor).analisar(YearMonth.of(2026, 10), Gatilho.IMPORTACAO_ESCALA, id);
 	}
 }

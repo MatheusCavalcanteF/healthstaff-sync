@@ -1,6 +1,8 @@
 package br.com.healthstaff.backend.importacao;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,13 +18,17 @@ import br.com.healthstaff.backend.extrator.ExtratorIndisponivelException;
 import br.com.healthstaff.backend.extrator.PessoaConhecida;
 import br.com.healthstaff.backend.extrator.SolicitacaoExtracao;
 import br.com.healthstaff.backend.extrator.contrato.LoteImportacao;
+import br.com.healthstaff.backend.regras.Analise.Gatilho;
+import br.com.healthstaff.backend.regras.MotorRegrasService;
 
 /**
  * Fluxo de importação: upload -> extrator (Python) -> banco.
  *
  * <p>A chamada ao extrator acontece fora de transação (pode levar segundos e
  * não deve segurar conexão do banco); a gravação é uma transação única em
- * {@link ImportacaoService}.
+ * {@link ImportacaoService}. Depois de gravar um arquivo novo, o motor de regras
+ * reanalisa a competência afetada; uma falha na análise não desfaz a importação
+ * (fica no log e pode ser reprocessada em {@code POST /api/v1/analises/{competencia}}).
  */
 @Service
 public class ImportarArquivoService {
@@ -34,14 +40,16 @@ public class ImportarArquivoService {
 	private final ImportacaoConsulta consulta;
 	private final ImportacaoRepository repositorio;
 	private final ColaboradorRepository colaboradores;
+	private final MotorRegrasService motor;
 
 	public ImportarArquivoService(ExtratorClient extrator, ImportacaoService importacoes, ImportacaoConsulta consulta,
-			ImportacaoRepository repositorio, ColaboradorRepository colaboradores) {
+			ImportacaoRepository repositorio, ColaboradorRepository colaboradores, MotorRegrasService motor) {
 		this.extrator = extrator;
 		this.importacoes = importacoes;
 		this.consulta = consulta;
 		this.repositorio = repositorio;
 		this.colaboradores = colaboradores;
+		this.motor = motor;
 	}
 
 	/**
@@ -54,13 +62,34 @@ public class ImportarArquivoService {
 				.map(c -> new PessoaConhecida(c.getMatricula(), c.getNome()))
 				.toList();
 		var resultado = extrator.extrair(SolicitacaoExtracao.somenteEscala(paraExtracao(arquivo), cadastro));
-		return registrar(exigir(resultado.getEscala(), "escala"));
+		var resposta = registrar(exigir(resultado.getEscala(), "escala"));
+		analisar(resposta, Gatilho.IMPORTACAO_ESCALA,
+				resposta.escalas().stream().map(e -> YearMonth.from(e.competencia())).distinct().toList());
+		return resposta;
 	}
 
 	/** @param dataReferencia data dos saldos; nula = data da importação (o extrator registra um aviso) */
 	public ImportacaoResposta importarPonto(MultipartFile arquivo, LocalDate dataReferencia) {
 		var resultado = extrator.extrair(SolicitacaoExtracao.somenteBancoHoras(paraExtracao(arquivo), dataReferencia));
-		return registrar(exigir(resultado.getBancoHoras(), "banco de horas"));
+		var resposta = registrar(exigir(resultado.getBancoHoras(), "banco de horas"));
+		analisar(resposta, Gatilho.IMPORTACAO_PONTO, List.of(YearMonth.from(resposta.periodoFim())));
+		return resposta;
+	}
+
+	/** Reanalisa as competências afetadas por um arquivo novo (duplicado não muda nada). */
+	private void analisar(ImportacaoResposta resposta, Gatilho gatilho, List<YearMonth> competencias) {
+		if (resposta.duplicada()) {
+			return;
+		}
+		for (var competencia : competencias) {
+			try {
+				motor.analisar(competencia, gatilho, resposta.id());
+			}
+			catch (RuntimeException e) {
+				log.error("importação {} gravada, mas a análise de {} falhou; reprocesse em POST /api/v1/analises/{}",
+						resposta.id(), competencia, competencia, e);
+			}
+		}
 	}
 
 	ImportacaoResposta registrar(LoteImportacao lote) {
