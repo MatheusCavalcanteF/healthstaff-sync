@@ -32,6 +32,10 @@ server:
     max-swallow-size: 100MB
 
 healthstaff:
+  cors:
+    # Origens do frontend (Next.js). Em produção, o domínio real (variável CORS_ORIGENS, separadas por vírgula).
+    origens-permitidas: ${CORS_ORIGENS:http://localhost:3000}
+
   extrator:
     # python-extractor (docker compose up na raiz expõe em 127.0.0.1:8000)
     url: ${EXTRACTOR_URL:http://localhost:8000}

@@ -56,8 +56,16 @@
   - `GET /api/v1/analises/{AAAA-MM}`: resumo do mês (contagem por gravidade e tipo, sempre com todas as chaves; colaboradores afetados; horas agregadas no banco e exposição do banco de horas).
   - `GET /api/v1/analises/{AAAA-MM}/inconformidades`: alertas, mais graves primeiro, com colaborador e plantões/setores envolvidos; filtros `tipo`, `gravidade`, `colaboradorId`.
   - `GET /api/v1/colaboradores`: paginado (`pagina` desde 0, `tamanho` 1-200), filtros `vinculo` (OFICIAL/PROVISORIO) e `busca` (nome sem acento ou início da matrícula); traz categoria (nula se o cargo é desconhecido) e saldo mais recente do Two. Formato de página: `web.Pagina`.
+- **CORS:** `web.CorsConfig` libera `/api/**` para as origens de `healthstaff.cors.origens-permitidas` (padrão `http://localhost:3000`; variável `CORS_ORIGENS`), todos os métodos/headers, expondo `Location`. Nunca usar `*`. Ao adicionar o Spring Security, habilitar `http.cors()` para reaproveitar esta configuração.
 - Configuração local: um único `.env` na raiz (copiar de `.env.example`) serve ao docker compose e ao Java (`spring.config.import`). `POSTGRES_PASSWORD` é obrigatória.
 - Variáveis de ambiente compartilhadas entre os serviços usam sempre o prefixo `EXTRACTOR_` (`EXTRACTOR_URL`, `EXTRACTOR_API_KEY`): a mesma chave configura o Java e o Python.
+
+## Desenvolvimento (frontend)
+- Next.js 16 (App Router) + React 19 + Tailwind 4 + TypeScript, em `frontend/`. **Next 16 tem mudanças incompatíveis**: ler `frontend/AGENTS.md` e a documentação em `frontend/node_modules/next/dist/docs/` antes de mexer em rotas (`params`/`searchParams` são Promises; `export const dynamic` não existe mais; renderização por requisição via `await connection()`).
+- Requer Node.js 24 LTS. `npm run lint` e `npm run build` (faz a checagem de tipos).
+- `src/types/api.ts` espelha os DTOs Java (atualizar junto quando um record de resposta mudar). `src/lib/api/client.ts`: toda falha vira `ApiError` com o `ProblemDetail` (`erro.codigo`; `SEM_CONEXAO` quando o backend não responde).
+- Páginas de dados buscam no servidor (Server Components); o CORS serve às interações no navegador (upload, filtros). Datas exibidas no fuso `America/Sao_Paulo`, independente do fuso do servidor.
+- Erros esperados viram estados de tela: `ANALISE_NAO_ENCONTRADA` -> estado vazio com atalho para Importações; demais -> mensagem de erro (nunca confundir "sem dados" com "servidor fora").
 
 ## Dados sensíveis (LGPD)
 - Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.
