@@ -14,14 +14,15 @@ const DATA_HORA = new Intl.DateTimeFormat("pt-BR", {
 
 /**
  * Minutos em horas no padrão das mensagens do backend: 2682 -> "44h42",
- * 61615 -> "1.026h55", 600 -> "10h". Com `comSinal`, positivos ganham "+".
+ * 61615 -> "1.026h55", 600 -> "10h". Com `comSinal`, positivos ganham "+";
+ * com `minutosSempre`, hora cheia mantém os minutos ("10h00", para alinhar em colunas).
  */
-export function formatarHoras(minutos: number, { comSinal = false } = {}): string {
+export function formatarHoras(minutos: number, { comSinal = false, minutosSempre = false } = {}): string {
   const sinal = minutos < 0 ? "-" : comSinal && minutos > 0 ? "+" : "";
   const absoluto = Math.abs(Math.round(minutos));
   const horas = Math.floor(absoluto / 60);
   const resto = absoluto % 60;
-  return `${sinal}${NUMERO.format(horas)}h${resto === 0 ? "" : String(resto).padStart(2, "0")}`;
+  return `${sinal}${NUMERO.format(horas)}h${resto === 0 && !minutosSempre ? "" : String(resto).padStart(2, "0")}`;
 }
 
 export function formatarNumero(valor: number): string {
