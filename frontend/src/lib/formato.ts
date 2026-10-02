@@ -1,4 +1,7 @@
-import type { GatilhoAnalise, Gravidade, InstanteISO } from "@/types/api";
+import { format, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+import type { DataHoraISO, DataISO, GatilhoAnalise, Gravidade, InstanteISO } from "@/types/api";
 
 const NUMERO = new Intl.NumberFormat("pt-BR");
 
@@ -32,6 +35,19 @@ export function formatarPercentual(parte: number, total: number): string {
 
 export function formatarDataHora(instante: InstanteISO): string {
   return DATA_HORA.format(new Date(instante));
+}
+
+/**
+ * Data/hora de plantão (LocalDateTime, hora de parede do hospital, sem fuso):
+ * "2026-10-03T19:00:00" -> "03/10 (sáb) 19:00". Lida como hora local, sem conversão.
+ */
+export function formatarMomento(momento: DataHoraISO): string {
+  return format(parseISO(momento), "dd/MM (EEE) HH:mm", { locale: ptBR });
+}
+
+/** "2026-10-03" -> "03/10/2026". */
+export function formatarDia(dia: DataISO): string {
+  return format(parseISO(dia), "dd/MM/yyyy");
 }
 
 export const ROTULO_GRAVIDADE: Record<Gravidade, string> = {
