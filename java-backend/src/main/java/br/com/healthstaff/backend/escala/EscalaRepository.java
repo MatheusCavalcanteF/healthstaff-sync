@@ -3,6 +3,7 @@ package br.com.healthstaff.backend.escala;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -15,4 +16,7 @@ public interface EscalaRepository extends JpaRepository<Escala, Long> {
 	int ultimaVersao(Setor setor, LocalDate competencia);
 
 	List<Escala> findBySetorAndCompetenciaOrderByVersao(Setor setor, LocalDate competencia);
+
+	@Query("select e from Escala e join fetch e.setor where e.importacaoId = :importacaoId order by e.id")
+	List<Escala> findByImportacaoId(UUID importacaoId);
 }

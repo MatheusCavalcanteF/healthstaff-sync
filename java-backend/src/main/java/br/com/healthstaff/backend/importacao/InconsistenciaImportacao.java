@@ -100,4 +100,24 @@ public class InconsistenciaImportacao {
 	public String getNomeColaborador() {
 		return nomeColaborador;
 	}
+
+	public Integer getPagina() {
+		return pagina;
+	}
+
+	public String getSetor() {
+		return setor;
+	}
+
+	public String getMatricula() {
+		return matricula;
+	}
+
+	public LocalDate getData() {
+		return data;
+	}
+
+	public String getValorBruto() {
+		return valorBruto;
+	}
 }

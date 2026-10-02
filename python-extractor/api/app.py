@@ -30,19 +30,20 @@ from typing import Annotated, BinaryIO
 from fastapi import Depends, FastAPI, File, Form, Header, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from pydantic import TypeAdapter, ValidationError
 
 from extractors import ErroExtracao, ExtratorNaoEncontrado, criar_registry_padrao
 from models import (
     CodigoInconsistencia,
     ErroApi,
     Inconsistencia,
+    ItemCadastro,
     LoteImportacao,
     ResultadoExtracao,
     Severidade,
     TipoDocumento,
 )
-from utils.matcher import ColaboradorMatcher
+from utils.matcher import CadastroColaborador, ColaboradorMatcher
 
 from .schema import gerar_schema
 
@@ -54,6 +55,7 @@ TIPOS_ESCALA = {TipoDocumento.ESCALA_PDF, TipoDocumento.ESCALA_EXCEL}
 TIPOS_BANCO_HORAS = {TipoDocumento.PONTO_EXCEL, TipoDocumento.PONTO_CSV}
 _CARACTERES_INVALIDOS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
 _BLOCO = 1024 * 1024
+_LISTA_CADASTRO = TypeAdapter(list[ItemCadastro])
 
 
 class ErroRequisicao(Exception):
@@ -172,6 +174,16 @@ def create_app(
             date | None,
             Form(description="Data dos saldos (AAAA-MM-DD). Padrão: data da importação."),
         ] = None,
+        cadastro: Annotated[
+            str | None,
+            Form(
+                description=(
+                    'JSON com os colaboradores já conhecidos: [{"matricula": "...", "nome": "..."}]. '
+                    "Permite inferir matrículas da escala sem enviar o banco de horas junto; "
+                    "se ambos vierem, o banco de horas prevalece."
+                )
+            ),
+        ] = None,
     ) -> ResultadoExtracao:
         """Extrai a escala e/ou o Banco de Horas.
 
@@ -183,6 +195,7 @@ def create_app(
             raise ErroRequisicao(
                 422, "ARQUIVO_AUSENTE", "envie ao menos um arquivo: 'escala' ou 'banco_horas'"
             )
+        conhecidos = _ler_cadastro(cadastro)  # valida antes de processar arquivos
 
         referencia = data_referencia_ponto or date.today()
         resultado = ResultadoExtracao()
@@ -203,16 +216,40 @@ def create_app(
                         )
                     )
 
-            matcher = (
-                ColaboradorMatcher.de_lote(resultado.banco_horas)
-                if resultado.banco_horas is not None
-                else None
-            )
+            matcher = _montar_matcher(conhecidos, resultado.banco_horas)
             if escala is not None:
                 resultado.escala = _extrair_arquivo(
                     escala, "escala", TIPOS_ESCALA, Path(tmp), matcher, referencia
                 )
         return resultado
+
+    def _ler_cadastro(cadastro: str | None) -> list[ItemCadastro]:
+        if cadastro is None or not cadastro.strip():
+            return []
+        try:
+            return _LISTA_CADASTRO.validate_json(cadastro)
+        except ValidationError as erro:
+            raise ErroRequisicao(
+                422,
+                "CADASTRO_INVALIDO",
+                "cadastro deve ser uma lista JSON de {matricula, nome}: "
+                + erro.errors()[0]["msg"],
+                "cadastro",
+            ) from None
+
+    def _montar_matcher(
+        cadastro: list[ItemCadastro], banco_horas: LoteImportacao | None
+    ) -> ColaboradorMatcher | None:
+        """Cadastro do java-backend + Banco de Horas enviado (este prevalece)."""
+        pessoas = {item.matricula: CadastroColaborador(item.matricula, item.nome) for item in cadastro}
+        if banco_horas is not None:
+            for setor in banco_horas.setores:
+                for colaborador in setor.colaboradores:
+                    if colaborador.matricula:
+                        pessoas[colaborador.matricula] = CadastroColaborador(
+                            colaborador.matricula, colaborador.nome
+                        )
+        return ColaboradorMatcher(pessoas.values()) if pessoas else None
 
     def _extrair_arquivo(
         upload: UploadFile,

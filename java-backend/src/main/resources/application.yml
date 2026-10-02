@@ -9,6 +9,14 @@ spring:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/healthstaff}
     username: ${POSTGRES_USER:healthstaff}
     password: ${POSTGRES_PASSWORD:}
+  servlet:
+    multipart:
+      # Mesmo limite do extrator (EXTRACTOR_MAX_UPLOAD_MB): recusa cedo, antes de repassar.
+      max-file-size: ${EXTRACTOR_MAX_UPLOAD_MB:20}MB
+      max-request-size: ${EXTRACTOR_MAX_UPLOAD_MB:20}MB
+  mvc:
+    problemdetails:
+      enabled: true
   jpa:
     open-in-view: false
     hibernate:
@@ -17,6 +25,11 @@ spring:
 
 server:
   port: ${PORT:8080}
+  tomcat:
+    # Ao recusar um upload acima do limite, o Tomcat só descarta 2 MB do resto do
+    # corpo (padrão) e fecha a conexão: o navegador veria erro de rede em vez do 413.
+    # Descartar até 100 MB garante a resposta "arquivo muito grande" sem ler sem fim.
+    max-swallow-size: 100MB
 
 healthstaff:
   extrator:

@@ -303,3 +303,11 @@ class ErroApi(ContratoBase):
     mensagem: str
     campo: str | None = Field(default=None, description="Campo do formulário com problema.")
     arquivo: str | None = None
+
+
+class ItemCadastro(ContratoBase):
+    """Colaborador já conhecido pelo java-backend, enviado em ``cadastro`` para
+    o matcher associar nomes da escala mesmo sem o relatório do Two junto."""
+
+    matricula: TextoNaoVazio
+    nome: TextoNaoVazio

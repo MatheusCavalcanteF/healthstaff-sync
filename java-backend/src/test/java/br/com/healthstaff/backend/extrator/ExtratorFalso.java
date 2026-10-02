@@ -18,15 +18,15 @@ import com.sun.net.httpserver.HttpServer;
  * Servidor HTTP real (JDK) no lugar do python-extractor: responde o que o
  * teste mandar e guarda as requisições recebidas para inspeção.
  */
-final class ExtratorFalso implements AutoCloseable {
+public final class ExtratorFalso implements AutoCloseable {
 
-	record Requisicao(String metodo, String caminho, Headers cabecalhos, byte[] corpo) {
+	public record Requisicao(String metodo, String caminho, Headers cabecalhos, byte[] corpo) {
 
-		String corpoTexto() {
+		public String corpoTexto() {
 			return new String(corpo, StandardCharsets.UTF_8);
 		}
 
-		String cabecalho(String nome) {
+		public String cabecalho(String nome) {
 			return cabecalhos.getFirst(nome);
 		}
 	}
@@ -39,7 +39,7 @@ final class ExtratorFalso implements AutoCloseable {
 	private volatile String tipoConteudo;
 	private volatile Duration atraso;
 
-	ExtratorFalso() {
+	public ExtratorFalso() {
 		try {
 			servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
 		}
@@ -54,32 +54,36 @@ final class ExtratorFalso implements AutoCloseable {
 		reiniciar();
 	}
 
-	String url() {
+	public String url() {
 		return "http://127.0.0.1:" + servidor.getAddress().getPort();
 	}
 
-	void reiniciar() {
+	public void reiniciar() {
 		recebidas.clear();
 		responder(200, "{}");
 		atraso = Duration.ZERO;
 	}
 
-	void responder(int status, String corpoJson) {
+	public void responder(int status, String corpoJson) {
 		responder(status, corpoJson, "application/json");
 	}
 
-	void responder(int status, String corpo, String tipoConteudo) {
+	public void responder(int status, String corpo, String tipoConteudo) {
 		this.status = status;
 		this.corpo = corpo;
 		this.tipoConteudo = tipoConteudo;
 	}
 
-	void atrasar(Duration atraso) {
+	public void atrasar(Duration atraso) {
 		this.atraso = atraso;
 	}
 
-	Requisicao ultima() {
+	public Requisicao ultima() {
 		return recebidas.getLast();
+	}
+
+	public int recebidas() {
+		return recebidas.size();
 	}
 
 	private void tratar(HttpExchange troca) throws IOException {

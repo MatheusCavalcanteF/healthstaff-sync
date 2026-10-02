@@ -168,6 +168,23 @@ class ExtratorClientTest extends IntegracaoComBanco {
 		}
 
 		@Test
+		void enviaCadastroConhecidoComoJson() throws Exception {
+			EXTRATOR.responder(200, EXEMPLO);
+
+			cliente.extrair(SolicitacaoExtracao.somenteEscala(arquivo("escala.xlsx", "x"),
+					java.util.List.of(new PessoaConhecida("90002", "VANIA FICTICIA ROCHA"),
+							new PessoaConhecida("90004", "YARA FICTICIA BRAGA"))));
+
+			var corpo = EXTRATOR.ultima().corpoTexto();
+			assertThat(corpo).contains("name=\"cadastro\"");
+			var json = corpo.substring(corpo.indexOf('[', corpo.indexOf("name=\"cadastro\"")));
+			json = json.substring(0, json.indexOf(']') + 1);
+			assertThat(jsonMapper.readTree(json).toString())
+					.isEqualTo("[{\"matricula\":\"90002\",\"nome\":\"VANIA FICTICIA ROCHA\"},"
+							+ "{\"matricula\":\"90004\",\"nome\":\"YARA FICTICIA BRAGA\"}]");
+		}
+
+		@Test
 		void naoEnviaCamposNaoInformados() {
 			EXTRATOR.responder(200, EXEMPLO);
 
@@ -176,7 +193,8 @@ class ExtratorClientTest extends IntegracaoComBanco {
 			assertThat(EXTRATOR.ultima().corpoTexto())
 					.contains("name=\"escala\"")
 					.doesNotContain("banco_horas")
-					.doesNotContain("data_referencia_ponto");
+					.doesNotContain("data_referencia_ponto")
+					.doesNotContain("cadastro");
 		}
 
 		@Test

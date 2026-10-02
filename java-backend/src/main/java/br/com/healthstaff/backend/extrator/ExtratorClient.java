@@ -59,6 +59,9 @@ public class ExtratorClient {
 		if (solicitacao.dataReferenciaPonto() != null) {
 			formulario.add("data_referencia_ponto", solicitacao.dataReferenciaPonto().toString());
 		}
+		if (!solicitacao.cadastro().isEmpty()) {
+			formulario.add("cadastro", jsonMapper.writeValueAsString(solicitacao.cadastro()));
+		}
 
 		try {
 			var resultado = restClient.post()

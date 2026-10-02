@@ -317,3 +317,53 @@ def test_main_aplica_a_chave_do_ambiente(monkeypatch):
     assert cliente.get("/schema").status_code == 401
     assert cliente.get("/schema", headers={"X-API-Key": "errada"}).status_code == 401
     assert cliente.get("/schema", headers={"X-API-Key": "do-ambiente"}).status_code == 200
+
+
+class TestCadastroDoBackend:
+    """Escala enviada sozinha: o java-backend manda as pessoas que já conhece."""
+
+    def _cadastro(self, *pessoas) -> str:
+        return json.dumps([{"matricula": m, "nome": n} for m, n in pessoas])
+
+    def test_escala_sozinha_usa_o_cadastro_enviado(self, cliente, escala_xlsx):
+        resposta = enviar(
+            cliente,
+            {"cadastro": self._cadastro(("90002", "VANIA FICTICIA ROCHA DOS SANTOS"))},
+            escala=("escala.xlsx", escala_xlsx, XLSX),
+        )
+        assert resposta.status_code == 200
+        lote = resposta.json()["escala"]
+        # Nome da escala é parcial: o casamento aproximado só é possível com o cadastro.
+        assert colaboradores(lote) == {"VANIA FICTICIA ROCHA": "90002", "RECEM CONTRATADA": None}
+
+    def test_banco_de_horas_prevalece_sobre_o_cadastro(self, cliente, escala_xlsx, banco_horas_xlsx):
+        resposta = enviar(
+            cliente,
+            {"data_referencia_ponto": "2026-10-01",
+             "cadastro": self._cadastro(("1", "VANIA FICTICIA ROCHA"))},
+            escala=("escala.xlsx", escala_xlsx, XLSX),
+            banco_horas=("bh.xlsx", banco_horas_xlsx, XLSX),
+        )
+        assert resposta.status_code == 200
+        # O Two (90002) e o cadastro (1) têm o mesmo nome: é ambíguo, ninguém é adivinhado.
+        assert colaboradores(resposta.json()["escala"])["VANIA FICTICIA ROCHA"] is None
+
+    def test_cadastro_vazio_equivale_a_nenhum(self, cliente, escala_xlsx):
+        resposta = enviar(cliente, {"cadastro": "[]"}, escala=("escala.xlsx", escala_xlsx, XLSX))
+        assert resposta.status_code == 200
+        assert colaboradores(resposta.json()["escala"])["VANIA FICTICIA ROCHA"] is None
+
+    @pytest.mark.parametrize(
+        "invalido",
+        ["isto não é json", '{"matricula": "1"}', '[{"matricula": "1"}]', '[{"matricula": "", "nome": "A"}]'],
+    )
+    def test_cadastro_invalido(self, cliente, escala_xlsx, invalido):
+        resposta = enviar(cliente, {"cadastro": invalido}, escala=("escala.xlsx", escala_xlsx, XLSX))
+        assert resposta.status_code == 422
+        assert resposta.json()["codigo"] == "CADASTRO_INVALIDO"
+        assert resposta.json()["campo"] == "cadastro"
+
+    def test_cadastro_com_matricula_repetida_nao_quebra(self, cliente, escala_xlsx):
+        cadastro = self._cadastro(("90002", "VANIA FICTICIA ROCHA"), ("90002", "VANIA FICTICIA ROCHA"))
+        resposta = enviar(cliente, {"cadastro": cadastro}, escala=("escala.xlsx", escala_xlsx, XLSX))
+        assert resposta.status_code == 200

@@ -12,6 +12,8 @@ public interface SaldoBancoHorasRepository extends JpaRepository<SaldoBancoHoras
 
 	List<SaldoBancoHoras> findByImportacaoId(UUID importacaoId);
 
+	long countByImportacaoId(UUID importacaoId);
+
 	/** Saldo mais recente do colaborador (pela data de referência). */
 	Optional<SaldoBancoHoras> findFirstByColaboradorOrderByDataReferenciaDescIdDesc(Colaborador colaborador);
 }

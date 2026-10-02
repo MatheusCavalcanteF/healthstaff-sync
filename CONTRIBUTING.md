@@ -16,11 +16,14 @@
 
 ### 3. Integração
 - **Fluxo:** Frontend -> Java (`POST /api/v1/importacoes/*`) -> Python (`POST /extracoes`) -> JSON -> Java persiste e valida.
-- **Endpoints do Java (expostos ao frontend):**
-  - `POST /api/v1/importacoes/escalas`
-  - `POST /api/v1/importacoes/ponto`
+- **Endpoints do Java (expostos ao frontend):** multipart com o campo `arquivo`.
+  - `POST /api/v1/importacoes/escalas`: envia ao extrator a escala **e o cadastro já conhecido** (matrícula + nome de todos no banco), para o casamento aproximado de nomes funcionar com a escala sozinha.
+  - `POST /api/v1/importacoes/ponto` (+ `dataReferencia` opcional, AAAA-MM-DD).
+  - `GET /api/v1/importacoes/{id}`.
+  - 201 + `Location` (novo) | 200 com `duplicada: true` (mesmo arquivo, inclusive envio simultâneo). Erros em Problem Details (RFC 9457) sempre com `codigo`: `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `EXTRATOR_INDISPONIVEL` (503, sem detalhe interno) ou o código do extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+  - A chamada ao extrator fica fora da transação; a gravação é uma transação única.
 - **Endpoints do Python (internos, só o Java chama):**
-  - `POST /extracoes`: multipart com `escala` e/ou `banco_horas` e `data_referencia_ponto` opcional. Processa os dois na mesma requisição: o Banco de Horas é extraído primeiro e serve de cadastro para o matcher resolver as matrículas da escala.
+  - `POST /extracoes`: multipart com `escala` e/ou `banco_horas`, `data_referencia_ponto` e `cadastro` (JSON `[{"matricula","nome"}]`) opcionais. O matcher usa o `cadastro` somado ao Banco de Horas enviado (este prevalece).
   - `GET /schema`: JSON Schema da resposta. Versionado em `python-extractor/schema/resultado-extracao.schema.json` (regenerar com `python -m api.schema`).
   - `GET /health`.
 - **Erros:** formato único `ErroApi` (`codigo`, `mensagem`, `campo`, `arquivo`); falha em um arquivo derruba a requisição inteira (sem lote parcial).
@@ -42,6 +45,7 @@
 - Modelo: `importacao` (um lote do extrator; `(tipo, hash_sha256)` único = mesmo arquivo não reimporta) -> `inconsistencia`; `escala` versionada por setor + competência (só uma `vigente`, garantido por índice parcial; versões antigas ficam como histórico) -> `plantao` (com `setor_id` próprio); `saldo_banco_horas` (um retrato por relatório do Two).
 - Colaborador sem matrícula = cadastro provisório (único por nome normalizado), promovido quando a matrícula aparece no Two. `ColaboradorResolver` só usa igualdade exata de nome; homônimos nunca são adivinhados (o fuzzy é no extrator).
 - O Two é a fonte oficial de nome/matrícula; a escala complementa cargo, COREN e jornada sem que uma fonte apague a outra.
+- Upload: limite do Java = `EXTRACTOR_MAX_UPLOAD_MB` (o mesmo do extrator). `server.tomcat.max-swallow-size` é alto de propósito: sem isso, uploads bem acima do limite derrubam a conexão em vez de receber o 413.
 - Configuração local: um único `.env` na raiz (copiar de `.env.example`) serve ao docker compose e ao Java (`spring.config.import`). `POSTGRES_PASSWORD` é obrigatória.
 - Variáveis de ambiente compartilhadas entre os serviços usam sempre o prefixo `EXTRACTOR_` (`EXTRACTOR_URL`, `EXTRACTOR_API_KEY`): a mesma chave configura o Java e o Python.
 

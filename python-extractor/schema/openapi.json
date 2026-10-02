@@ -215,6 +215,18 @@
             ],
             "title": "Data Referencia Ponto",
             "description": "Data dos saldos (AAAA-MM-DD). Padrão: data da importação."
+          },
+          "cadastro": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cadastro",
+            "description": "JSON com os colaboradores já conhecidos: [{\"matricula\": \"...\", \"nome\": \"...\"}]. Permite inferir matrículas da escala sem enviar o banco de horas junto; se ambos vierem, o banco de horas prevalece."
           }
         },
         "type": "object",

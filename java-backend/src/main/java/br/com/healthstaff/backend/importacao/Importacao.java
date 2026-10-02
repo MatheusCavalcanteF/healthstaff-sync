@@ -121,4 +121,12 @@ public class Importacao {
 	public boolean isPossuiErros() {
 		return possuiErros;
 	}
+
+	public int getTotalColaboradores() {
+		return totalColaboradores;
+	}
+
+	public int getTotalPlantoes() {
+		return totalPlantoes;
+	}
 }

@@ -9,6 +9,9 @@ public interface ColaboradorRepository extends JpaRepository<Colaborador, Long> 
 
 	Optional<Colaborador> findByMatricula(String matricula);
 
+	/** Cadastro conhecido, enviado ao extrator para associar nomes da escala. */
+	List<Colaborador> findByMatriculaIsNotNullOrderByMatricula();
+
 	Optional<Colaborador> findByMatriculaIsNullAndNomeNormalizado(String nomeNormalizado);
 
 	List<Colaborador> findByMatriculaIsNotNullAndNomeNormalizado(String nomeNormalizado);
