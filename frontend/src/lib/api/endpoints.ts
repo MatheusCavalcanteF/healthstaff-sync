@@ -43,10 +43,16 @@ export async function listarColaboradores(
   return data;
 }
 
+/**
+ * Uploads: no navegador o Axios troca este cabeçalho pelo que o próprio browser
+ * gera para o FormData, com o `boundary` (escrito à mão, ele faltaria).
+ */
+const MULTIPART = { headers: { "Content-Type": "multipart/form-data" } };
+
 export async function importarEscala(arquivo: File): Promise<ImportacaoResponse> {
   const formulario = new FormData();
   formulario.append("arquivo", arquivo);
-  const { data } = await api.post<ImportacaoResponse>("/importacoes/escalas", formulario);
+  const { data } = await api.post<ImportacaoResponse>("/importacoes/escalas", formulario, MULTIPART);
   return data;
 }
 
@@ -61,9 +67,8 @@ export async function importarPonto(
 ): Promise<ImportacaoResponse> {
   const formulario = new FormData();
   formulario.append("arquivo", arquivo);
-  const { data } = await api.post<ImportacaoResponse>("/importacoes/ponto", formulario, {
-    params: { dataReferencia },
-  });
+  formulario.append("dataReferencia", dataReferencia);
+  const { data } = await api.post<ImportacaoResponse>("/importacoes/ponto", formulario, MULTIPART);
   return data;
 }
 
