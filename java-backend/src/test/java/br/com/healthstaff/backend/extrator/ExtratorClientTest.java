@@ -24,6 +24,8 @@ import br.com.healthstaff.backend.extrator.contrato.TipoDocumento;
 import br.com.healthstaff.backend.extrator.contrato.TipoMarcacao;
 import br.com.healthstaff.backend.extrator.contrato.Turno;
 
+import br.com.healthstaff.backend.IntegracaoComBanco;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Status;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,7 +45,7 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest(properties = {
 		"healthstaff.extrator.api-key=chave-de-teste",
 		"healthstaff.extrator.timeout-leitura=2s" })
-class ExtratorClientTest {
+class ExtratorClientTest extends IntegracaoComBanco {
 
 	static final ExtratorFalso EXTRATOR = new ExtratorFalso();
 	static final String EXEMPLO = lerExemplo();

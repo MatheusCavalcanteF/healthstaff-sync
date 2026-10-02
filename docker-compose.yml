@@ -1,11 +1,12 @@
-# Execução local do microsserviço de extração.
+# Execução local do extrator (Python) e do Postgres.
 #
+#   copy .env.example .env           # e defina POSTGRES_PASSWORD
 #   docker compose up --build -d     # sobe em segundo plano
 #   docker compose ps                # STATUS deve chegar a "healthy"
 #   docker compose logs -f extractor
-#   docker compose down
+#   docker compose down              # (-v também apaga os dados do Postgres)
 #
-# Variáveis opcionais: copie .env.example para .env e ajuste.
+# O java-backend roda fora do compose (./mvnw spring-boot:run) e lê o mesmo .env.
 
 name: healthstaff
 
@@ -37,3 +38,29 @@ services:
         limits:
           memory: 1g
     restart: unless-stopped
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: healthstaff-postgres
+    environment:
+      POSTGRES_DB: healthstaff
+      POSTGRES_USER: ${POSTGRES_USER:-healthstaff}
+      # Obrigatória: sem senha padrão, mesmo em desenvolvimento.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env (copie de .env.example)}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORTA_LOCAL:-5432}:5432"
+    volumes:
+      # A partir do Postgres 18 a imagem guarda os dados em /var/lib/postgresql/<versão>.
+      - postgres-dados:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+volumes:
+  postgres-dados:

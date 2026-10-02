@@ -12,6 +12,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import br.com.healthstaff.backend.extrator.contrato.Colaborador;
 import br.com.healthstaff.backend.extrator.contrato.TipoDocumento;
 
+import br.com.healthstaff.backend.IntegracaoComBanco;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.health.contributor.Status;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,7 +33,7 @@ import org.springframework.core.io.ByteArrayResource;
 @SpringBootTest(properties = {
 		"healthstaff.extrator.url=${EXTRACTOR_E2E_URL}",
 		"healthstaff.extrator.api-key=${EXTRACTOR_E2E_API_KEY:}" })
-class ExtratorE2ETest {
+class ExtratorE2ETest extends IntegracaoComBanco {
 
 	/** Relatório de Banco de Horas do Two em CSV, com dados fictícios. */
 	static final String BANCO_HORAS_CSV = """

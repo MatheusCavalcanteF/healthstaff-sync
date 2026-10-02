@@ -1,6 +1,19 @@
 spring:
   application:
     name: healthstaff-backend
+  config:
+    # O mesmo .env do docker-compose (raiz do repositório), se existir.
+    import: optional:file:../.env[.properties]
+  datasource:
+    # Mesmas variáveis do serviço postgres do docker-compose.yml (um único .env).
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/healthstaff}
+    username: ${POSTGRES_USER:healthstaff}
+    password: ${POSTGRES_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # O esquema é do Flyway (db/migration); o Hibernate só confere se as entidades batem.
+      ddl-auto: validate
 
 server:
   port: ${PORT:8080}

@@ -19,9 +19,24 @@
 		<openapi-generator.version>7.25.0</openapi-generator.version>
 		<!-- Base para @{argLine} do surefire (ferramentas como JaCoCo acrescentam aqui). -->
 		<argLine></argLine>
+		<!-- Mesma versão do Postgres de produção (docker-compose: postgres:18). -->
+		<embedded-postgres.version>2.2.2</embedded-postgres.version>
+		<embedded-postgres-binaries.version>18.6.0</embedded-postgres-binaries.version>
 		<!-- Contrato publicado pelo python-extractor (python -m api.schema). -->
 		<extrator.openapi>${project.basedir}/../python-extractor/schema/openapi.json</extrator.openapi>
 	</properties>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>io.zonky.test.postgres</groupId>
+				<artifactId>embedded-postgres-binaries-bom</artifactId>
+				<version>${embedded-postgres-binaries.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
 
 	<dependencies>
 		<dependency>
@@ -39,6 +54,23 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
 		</dependency>
 
 		<dependency>
@@ -59,6 +91,29 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- Postgres real nos testes, sem Docker (baixa os binários do Postgres 18). -->
+		<dependency>
+			<groupId>io.zonky.test</groupId>
+			<artifactId>embedded-postgres</artifactId>
+			<version>${embedded-postgres.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<!-- Windows/Linux/macOS Intel já vêm por padrão; ARM (Apple Silicon, CI ARM) não. -->
+		<dependency>
+			<groupId>io.zonky.test.postgres</groupId>
+			<artifactId>embedded-postgres-binaries-darwin-arm64v8</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.zonky.test.postgres</groupId>
+			<artifactId>embedded-postgres-binaries-linux-arm64v8</artifactId>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

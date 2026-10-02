@@ -38,6 +38,11 @@
 - Geração: `DateTime` -> `LocalDateTime` (o Python envia hora local sem fuso); enums desconhecidos viram `unknown_default_open_api` (códigos novos de inconsistência não quebram), mas `versaoContrato` diferente de 1.0 é rejeitada pelo cliente.
 - Cliente: `ExtratorClient` (RestClient, HTTP/1.1, Jackson 3). Arquivo recusado -> `ExtracaoRejeitadaException` (erro do usuário, carrega o `ErroApi`); serviço fora/timeout/401/5xx/resposta fora do contrato -> `ExtratorIndisponivelException`. Saúde do extrator em `/actuator/health` (componente `extrator`).
 - Testes: `ExtratorClientTest` usa um servidor HTTP falso e a resposta-exemplo `src/test/resources/contrato/resultado-extracao.exemplo.json` (gerada pela API Python com dados fictícios e validada por um teste Python). `ExtratorE2ETest` roda contra o Python real só com `EXTRACTOR_E2E_URL` (e `EXTRACTOR_E2E_API_KEY`) definidas.
+- Persistência: Postgres 18 + Flyway (`src/main/resources/db/migration`) + JPA com `ddl-auto: validate` (o esquema é só do Flyway; o Hibernate apenas confere). Testes usam Postgres 18 **embutido** (io.zonky, sem Docker) via `IntegracaoComBanco`; toda classe `@SpringBootTest` deve estendê-la.
+- Modelo: `importacao` (um lote do extrator; `(tipo, hash_sha256)` único = mesmo arquivo não reimporta) -> `inconsistencia`; `escala` versionada por setor + competência (só uma `vigente`, garantido por índice parcial; versões antigas ficam como histórico) -> `plantao` (com `setor_id` próprio); `saldo_banco_horas` (um retrato por relatório do Two).
+- Colaborador sem matrícula = cadastro provisório (único por nome normalizado), promovido quando a matrícula aparece no Two. `ColaboradorResolver` só usa igualdade exata de nome; homônimos nunca são adivinhados (o fuzzy é no extrator).
+- O Two é a fonte oficial de nome/matrícula; a escala complementa cargo, COREN e jornada sem que uma fonte apague a outra.
+- Configuração local: um único `.env` na raiz (copiar de `.env.example`) serve ao docker compose e ao Java (`spring.config.import`). `POSTGRES_PASSWORD` é obrigatória.
 - Variáveis de ambiente compartilhadas entre os serviços usam sempre o prefixo `EXTRACTOR_` (`EXTRACTOR_URL`, `EXTRACTOR_API_KEY`): a mesma chave configura o Java e o Python.
 
 ## Dados sensíveis (LGPD)
