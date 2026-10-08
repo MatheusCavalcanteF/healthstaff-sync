@@ -23,7 +23,8 @@ O backend Java precisa estar no ar (`./mvnw spring-boot:run` em `java-backend/`)
 
 | Rota | Tela |
 | --- | --- |
-| `/importacoes` | Envio da escala e do relatório de Banco de Horas do Two |
+| `/login` | Entrada (e-mail e senha) |
+| `/importacoes` | Envio da escala e do relatório de Banco de Horas do Two (oculto para o perfil Auditoria) |
 | `/analises/{AAAA-MM}` | Dashboard do mês |
 | `/analises/{AAAA-MM}/inconformidades` | Alertas do mês |
 | `/colaboradores` | Cadastro oficial e provisório |
@@ -32,7 +33,9 @@ O backend Java precisa estar no ar (`./mvnw spring-boot:run` em `java-backend/`)
 
 - `src/types/api.ts` — tipos espelhando os DTOs do backend.
 - `src/lib/api/client.ts` — instância Axios; toda falha vira `ApiError` com o `ProblemDetail` do backend (`erro.codigo`).
-- `src/lib/api/endpoints.ts` — chamadas tipadas.
+- `src/lib/api/endpoints.ts` — chamadas tipadas feitas no servidor, com o token do cookie (`server-only`).
+- `src/lib/api/navegador.ts` — uploads do navegador, via o repasse `src/app/api/backend/[...caminho]/route.ts`.
+- `src/lib/sessao.ts` — cookie `httpOnly` com o JWT; `src/proxy.ts` manda para `/login` quem não tem sessão.
 
 ## Verificação
 

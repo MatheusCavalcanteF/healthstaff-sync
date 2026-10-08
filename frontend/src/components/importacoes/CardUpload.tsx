@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { FileCheck2, LoaderCircle, Upload, X, type LucideIcon } from "lucide-react";
 
 import { BannerErro, BannerSucesso } from "@/components/importacoes/Banners";
@@ -43,6 +44,8 @@ function tamanhoLegivel(bytes: number): string {
 /** Card com área de arrastar-e-soltar, botão de envio e resultado da importação. */
 export function CardUpload({ titulo, descricao, icone: Icone, extensoes, extras, ajuda, enviar, aoConcluir }: CardUploadProps) {
   const id = useId();
+  const roteador = useRouter();
+  const caminho = usePathname();
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [arrastando, setArrastando] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -90,6 +93,11 @@ export function CardUpload({ titulo, descricao, icone: Icone, extensoes, extras,
       // O client converte toda falha em ApiError; o resto é bug e deve aparecer.
       if (!(erro instanceof ApiError)) {
         throw erro;
+      }
+      if (erro.naoAutenticado) {
+        // Sessão expirou com a tela aberta: login e volta para cá.
+        roteador.push(`/login?motivo=sessao-expirada&proximo=${encodeURIComponent(caminho)}`);
+        return;
       }
       setResultado({ estado: "erro", erro });
     } finally {

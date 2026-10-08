@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Sidebar } from "@/components/layout/Sidebar";
+import { lerUsuarioSessao } from "@/lib/sessao";
 
 import "./globals.css";
 
@@ -23,11 +24,13 @@ export const metadata: Metadata = {
   description: "Conciliação de escalas e banco de horas do hospital.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const usuario = await lerUsuarioSessao();
+
   return (
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-slate-50 text-slate-900 md:flex-row">
-        <Sidebar />
+        <Sidebar usuario={usuario} />
         <main className="flex-1 overflow-y-auto px-4 py-6 md:h-screen md:px-8 md:py-8">{children}</main>
       </body>
     </html>

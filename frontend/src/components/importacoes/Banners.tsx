@@ -20,6 +20,7 @@ const TITULO_ERRO: Partial<Record<CodigoErro, string>> = {
   EXTRACAO_FALHOU: "Não foi possível ler o conteúdo",
   EXTRATOR_INDISPONIVEL: "Serviço de leitura de arquivos fora do ar",
   SEM_CONEXAO: "Sem conexão com o servidor",
+  ACESSO_NEGADO: "Seu perfil não pode importar",
 };
 
 function Banner({

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HeartPulse, LayoutDashboard, TriangleAlert, Upload, Users, type LucideIcon } from "lucide-react";
+import { HeartPulse, LayoutDashboard, LogOut, TriangleAlert, Upload, Users, type LucideIcon } from "lucide-react";
 
+import { sair } from "@/app/login/actions";
+import { ROTULO_PERFIL, type UsuarioSessao } from "@/lib/auth";
 import { competenciaDaRota, rotuloCompetencia } from "@/lib/competencia";
 import { cn } from "@/lib/utils";
 
@@ -48,9 +50,14 @@ function itensDoMenu(competencia: string | null): ItemMenu[] {
   ];
 }
 
-export function Sidebar() {
+export function Sidebar({ usuario }: { usuario: UsuarioSessao | null }) {
   const caminho = usePathname();
   const competencia = competenciaDaRota(caminho);
+
+  // A tela de login ocupa a página inteira.
+  if (caminho === "/login") {
+    return null;
+  }
 
   return (
     <aside className="flex shrink-0 flex-col border-b border-slate-200 bg-white md:h-screen md:w-64 md:border-r md:border-b-0">
@@ -84,11 +91,32 @@ export function Sidebar() {
         })}
       </nav>
 
-      {competencia && (
-        <p className="mt-auto hidden border-t border-slate-200 px-5 py-4 text-xs text-slate-500 md:block">
-          Competência: <span className="font-medium text-slate-700">{rotuloCompetencia(competencia)}</span>
-        </p>
-      )}
+      <div className="mt-auto">
+        {competencia && (
+          <p className="hidden border-t border-slate-200 px-5 py-4 text-xs text-slate-500 md:block">
+            Competência: <span className="font-medium text-slate-700">{rotuloCompetencia(competencia)}</span>
+          </p>
+        )}
+        {/* "hidden" acima vale só para a competência; nome e Sair aparecem também no celular. */}
+        {usuario && (
+          <div className="flex items-center justify-between gap-2 border-t border-slate-200 px-5 py-4">
+            <div className="min-w-0 leading-tight">
+              <p className="truncate text-sm font-medium text-slate-900">{usuario.nome}</p>
+              <p className="text-xs text-slate-500">{ROTULO_PERFIL[usuario.perfil]}</p>
+            </div>
+            <form action={sair}>
+              <button
+                type="submit"
+                title="Sair"
+                className="rounded-md p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+              >
+                <LogOut className="size-4" aria-hidden />
+                <span className="sr-only">Sair</span>
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </aside>
   );
 }

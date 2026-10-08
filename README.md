@@ -61,7 +61,9 @@ O HealthStaff Sync resolve isso:
 | Lucide Icons (`lucide-react`) | Ícones |
 | date-fns | Datas, exibidas sempre no fuso `America/Sao_Paulo` |
 
-Telas: Dashboard do mês, Inconformidades (com filtros e painel de plantões), Colaboradores (busca e paginação server-side) e Importações (upload).
+Telas: Login, Dashboard do mês, Inconformidades (com filtros e painel de plantões), Colaboradores (busca e paginação server-side) e Importações (upload).
+
+O token fica num cookie `httpOnly` lido só pelo servidor do Next: as páginas buscam dados em Server Components, e os uploads do navegador passam pelo repasse `/api/backend/*`, que acrescenta o token. O JavaScript da página nunca vê o JWT.
 
 ### Backend (`java-backend/`)
 
@@ -73,6 +75,7 @@ Telas: Dashboard do mês, Inconformidades (com filtros e painel de plantões), C
 | PostgreSQL 18 | Banco de dados |
 | RestClient (HTTP/1.1, Jackson 3) | `ExtratorClient`, cliente do extrator |
 | openapi-generator | Gera as classes do contrato a partir de `python-extractor/schema/openapi.json` a cada build |
+| Spring Security + JWT (OAuth2 Resource Server / Nimbus) | API sem estado, token HS256, perfis `ADMIN`, `GESTOR_RH` e `AUDITOR` |
 | Spring Boot Actuator | `/actuator/health`, com o componente `extrator` |
 
 Erros seguem Problem Details (RFC 9457), sempre com um campo `codigo`.
@@ -197,7 +200,9 @@ cd healthstaff-sync
 
 # 2. Configurar o .env (único, na raiz: serve ao docker compose e ao Java)
 copy .env.example .env
-#    Edite o .env e defina POSTGRES_PASSWORD (obrigatória: o compose não sobe sem ela).
+#    Edite o .env e defina POSTGRES_PASSWORD (obrigatória: o compose não sobe sem ela),
+#    HEALTHSTAFF_JWT_SECRET (obrigatória para o backend) e o admin inicial
+#    (HEALTHSTAFF_ADMIN_EMAIL / HEALTHSTAFF_ADMIN_SENHA).
 
 # 3. Subir o extrator e o PostgreSQL
 docker compose up --build -d
@@ -215,6 +220,11 @@ Variáveis principais do `.env`:
 | `EXTRACTOR_URL` | `http://localhost:8000` | Onde o Java encontra o extrator |
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/healthstaff` | Onde o Java encontra o banco |
 | `CORS_ORIGENS` | `http://localhost:3000` | Origens liberadas no backend (separadas por vírgula; nunca `*`) |
+| `HEALTHSTAFF_JWT_SECRET` | (vazia, obrigatória) | Chave que assina os tokens, com pelo menos 32 caracteres (`openssl rand -base64 48`). O backend não sobe sem ela |
+| `HEALTHSTAFF_JWT_EXPIRACAO` | `8h` | Validade do token; depois, novo login |
+| `HEALTHSTAFF_ADMIN_EMAIL` / `HEALTHSTAFF_ADMIN_SENHA` | (vazias) | Primeiro administrador, criado na subida só se não houver nenhum ADMIN ativo (senha com 12+ caracteres) |
+
+> Nenhum usuário vem pronto no banco (uma senha em migração ficaria no histórico do Git). Defina `HEALTHSTAFF_ADMIN_EMAIL` e `HEALTHSTAFF_ADMIN_SENHA` antes da primeira subida do backend e entre com eles em <http://localhost:3000/login>.
 
 ---
 
@@ -256,8 +266,12 @@ Para encerrar: `docker compose down` (com `-v` também apaga os dados do Postgre
 
 ### Java (exposto ao frontend), base `/api/v1`
 
+Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`GET`) vale para qualquer perfil; importações e reprocessamento são só de `ADMIN` e `GESTOR_RH` (`AUDITOR` é somente leitura).
+
 | Método | Rota | Descrição |
 | --- | --- | --- |
+| `POST` | `/auth/login` | `{"email", "senha"}` → token JWT, validade (`expiraEm`) e dados do usuário |
+| `GET` | `/auth/eu` | Usuário do token |
 | `POST` | `/importacoes/escalas` | Upload da escala (multipart, campo `arquivo`). Envia ao extrator também o cadastro já conhecido, para o casamento de nomes |
 | `POST` | `/importacoes/ponto` | Upload do Banco de Horas do Two (multipart, campo `arquivo`; `dataReferencia` opcional, `AAAA-MM-DD`) |
 | `GET` | `/importacoes/{id}` | Detalhe de uma importação |
@@ -268,7 +282,7 @@ Para encerrar: `docker compose down` (com `-v` também apaga os dados do Postgre
 
 **Respostas de importação:** `201` + `Location` (importação nova) ou `200` com `duplicada: true` (mesmo arquivo, inclusive em envio simultâneo).
 
-**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
 
 ### Python (interno, só o Java chama)
 
@@ -284,12 +298,12 @@ Erros no formato `ErroApi` (`codigo`, `mensagem`, `campo`, `arquivo`). Falha em 
 
 ## 7. Testes automatizados
 
-Resultado da última execução completa (08/10/2026), sem nenhuma falha:
+Resultado da última execução completa (08/10/2026, com a camada de segurança), sem nenhuma falha:
 
 | Módulo | Comando | Resultado |
 | --- | --- | --- |
 | python-extractor | `venv\Scripts\python -m pytest` | **367 aprovados** |
-| java-backend | `.\mvnw verify` | **201 testes: 198 aprovados, 3 pulados, 0 falhas** |
+| java-backend | `.\mvnw verify` | **242 testes: 239 aprovados, 3 pulados, 0 falhas** |
 
 Os 3 testes pulados são o `ExtratorE2ETest`, que roda contra o extrator Python real e só é habilitado com `EXTRACTOR_E2E_URL` (e `EXTRACTOR_E2E_API_KEY`) definidas.
 
@@ -325,8 +339,9 @@ npm run build   # inclui a checagem de tipos
 
 ## 8. Roadmap
 
-- [ ] **Autenticação JWT com Spring Security** (habilitando `http.cors()` para reaproveitar a configuração de CORS existente).
-- [ ] **Controle de acesso por perfis (RBAC)**: perfis distintos para coordenação de enfermagem, RH e auditoria.
+- [x] **Autenticação JWT com Spring Security**, com login no frontend (cookie `httpOnly`).
+- [ ] **Controle de acesso por perfis (RBAC) completo**: hoje há a regra mínima (`AUDITOR` só lê; `ADMIN` e `GESTOR_RH` importam e reprocessam). Faltam gestão de usuários pela interface, escopo por setor e trilha de auditoria.
+- [ ] **Proteção contra força bruta no login** (limite de tentativas por e-mail/IP).
 - [ ] **Deploy na nuvem** dos três serviços e do banco gerenciado.
 
 ---

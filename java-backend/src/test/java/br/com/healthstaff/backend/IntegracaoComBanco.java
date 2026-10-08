@@ -16,6 +16,8 @@ import org.springframework.test.context.DynamicPropertySource;
  */
 public abstract class IntegracaoComBanco {
 
+	public static final String SEGREDO_JWT_TESTE = "segredo-de-teste-com-pelo-menos-32-bytes!";
+
 	private static final EmbeddedPostgres POSTGRES = iniciar();
 
 	private static EmbeddedPostgres iniciar() {
@@ -41,5 +43,7 @@ public abstract class IntegracaoComBanco {
 		registro.add("spring.datasource.url", () -> POSTGRES.getJdbcUrl("postgres", "postgres"));
 		registro.add("spring.datasource.username", () -> "postgres");
 		registro.add("spring.datasource.password", () -> "postgres");
+		// Só para testes: em execução real a chave vem do .env (sem padrão).
+		registro.add("healthstaff.security.jwt.secret", () -> SEGREDO_JWT_TESTE);
 	}
 }

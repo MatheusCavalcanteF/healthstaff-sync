@@ -31,6 +31,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
@@ -43,6 +44,8 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+// Perfil com permissão de escrita (importa e reprocessa); as regras de acesso estão em SegurancaTest.
+@WithMockUser(roles = "GESTOR_RH")
 class ImportacaoControllerTest extends IntegracaoComBanco {
 
 	static final ExtratorFalso EXTRATOR = new ExtratorFalso();

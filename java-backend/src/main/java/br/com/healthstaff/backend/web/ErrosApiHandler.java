@@ -5,8 +5,15 @@ import org.slf4j.LoggerFactory;
 
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -19,6 +26,7 @@ import br.com.healthstaff.backend.importacao.ArquivoInvalidoException;
 import br.com.healthstaff.backend.importacao.ImportacaoNaoEncontradaException;
 import br.com.healthstaff.backend.regras.AnaliseNaoEncontradaException;
 import br.com.healthstaff.backend.regras.SemEscalaVigenteException;
+import br.com.healthstaff.backend.seguranca.CredenciaisInvalidasException;
 
 /**
  * Erros da API em Problem Details (RFC 9457). Todo corpo de erro traz a
@@ -99,6 +107,41 @@ class ErrosApiHandler {
 	@ExceptionHandler(ImportacaoNaoEncontradaException.class)
 	ProblemDetail naoEncontrada(ImportacaoNaoEncontradaException e) {
 		return problema(HttpStatus.NOT_FOUND, "Importação não encontrada", e.getMessage(), "IMPORTACAO_NAO_ENCONTRADA");
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	ProblemDetail corpoInvalido(MethodArgumentNotValidException e) {
+		var campo = e.getFieldError();
+		var detalhe = campo == null ? "requisição inválida" : "'" + campo.getField() + "' " + campo.getDefaultMessage();
+		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido", detalhe, "PARAMETRO_INVALIDO");
+	}
+
+	@ExceptionHandler(HttpMessageNotReadableException.class)
+	ProblemDetail corpoIlegivel(HttpMessageNotReadableException e) {
+		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido", "corpo da requisição ausente ou malformado",
+				"PARAMETRO_INVALIDO");
+	}
+
+	@ExceptionHandler(CredenciaisInvalidasException.class)
+	ProblemDetail credenciaisInvalidas(CredenciaisInvalidasException e) {
+		return problema(HttpStatus.UNAUTHORIZED, "Login recusado", e.getMessage(), "CREDENCIAIS_INVALIDAS");
+	}
+
+	/** Sem token, ou token inválido/expirado (vem dos filtros do Spring Security). */
+	@ExceptionHandler(AuthenticationException.class)
+	ResponseEntity<ProblemDetail> naoAutenticado(AuthenticationException e) {
+		var detalhe = e instanceof OAuth2AuthenticationException
+				? "sessão expirada ou inválida; faça login novamente"
+				: "faça login para acessar a API";
+		return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+				.header(HttpHeaders.WWW_AUTHENTICATE, "Bearer")
+				.body(problema(HttpStatus.UNAUTHORIZED, "Não autenticado", detalhe, "NAO_AUTENTICADO"));
+	}
+
+	@ExceptionHandler(AccessDeniedException.class)
+	ProblemDetail acessoNegado(AccessDeniedException e) {
+		return problema(HttpStatus.FORBIDDEN, "Acesso negado", "seu perfil não permite esta operação",
+				"ACESSO_NEGADO");
 	}
 
 	private static ProblemDetail problema(HttpStatus status, String titulo, String detalhe, String codigo) {

@@ -1,8 +1,13 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, type AxiosInstance } from "axios";
 
 import type { CodigoErro, ProblemDetail } from "@/types/api";
 
-/** URL base do java-backend. Sobrescreva com NEXT_PUBLIC_API_URL (ver .env.example). */
+/**
+ * URL base do java-backend, usada só no servidor do Next (Server Components,
+ * Server Actions e o repasse em /api/backend). O navegador nunca fala direto
+ * com o backend: o token fica num cookie httpOnly que só o servidor lê.
+ * Sobrescreva com NEXT_PUBLIC_API_URL (ver .env.example).
+ */
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 
@@ -23,22 +28,30 @@ export class ApiError extends Error {
     return this.problema.codigo;
   }
 
-  /** Sem resposta do servidor (backend fora do ar, CORS, rede). */
+  /** Sem resposta do servidor (backend fora do ar, rede). */
   get semConexao(): boolean {
-    return this.status === 0;
+    return this.status === 0 || this.codigo === "SEM_CONEXAO";
+  }
+
+  /** Sem sessão válida: é hora de fazer login de novo. */
+  get naoAutenticado(): boolean {
+    return this.codigo === "NAO_AUTENTICADO";
   }
 }
 
-export const api = axios.create({
-  baseURL: API_URL,
-  timeout: 130_000, // importações aguardam o extrator (timeout de leitura do backend: 120s)
-  headers: { Accept: "application/json, application/problem+json" },
-});
-
-api.interceptors.response.use(
-  (resposta) => resposta,
-  (erro: unknown) => Promise.reject(paraApiError(erro)),
-);
+/** Instância Axios cuja falha sempre chega como `ApiError`. */
+export function criarApi(baseURL: string): AxiosInstance {
+  const instancia = axios.create({
+    baseURL,
+    timeout: 130_000, // importações aguardam o extrator (timeout de leitura do backend: 120s)
+    headers: { Accept: "application/json, application/problem+json" },
+  });
+  instancia.interceptors.response.use(
+    (resposta) => resposta,
+    (erro: unknown) => Promise.reject(paraApiError(erro)),
+  );
+  return instancia;
+}
 
 function paraApiError(erro: unknown): ApiError {
   if (erro instanceof ApiError) {

@@ -6,10 +6,12 @@ import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 /**
  * CORS da API para o frontend (Next.js), que roda em outra origem.
@@ -18,13 +20,13 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * {@code Location} é exposto: as importações respondem 201 com ele, e sem
  * {@code exposedHeaders} o navegador o esconde do JavaScript.
  *
- * <p>Ao adicionar o Spring Security, habilite {@code http.cors()} para que o
- * filtro de segurança use esta mesma configuração (senão o preflight é
- * barrado antes de chegar aqui).
+ * <p>Quem aplica é o filtro de CORS do Spring Security ({@code http.cors()} em
+ * {@code seguranca.SecurityConfig}), antes da autenticação: o preflight passa
+ * sem token e as respostas 401/403 também levam os cabeçalhos.
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(CorsConfig.CorsProperties.class)
-class CorsConfig implements WebMvcConfigurer {
+class CorsConfig {
 
 	/**
 	 * @param origensPermitidas origens do frontend (ex.: http://localhost:3000)
@@ -42,13 +44,16 @@ class CorsConfig implements WebMvcConfigurer {
 		this.propriedades = propriedades;
 	}
 
-	@Override
-	public void addCorsMappings(CorsRegistry registro) {
-		registro.addMapping("/api/**")
-				.allowedOrigins(propriedades.origensPermitidas().toArray(String[]::new))
-				.allowedMethods("*")
-				.allowedHeaders("*")
-				.exposedHeaders(HttpHeaders.LOCATION)
-				.maxAge(propriedades.cachePreflight().toSeconds());
+	@Bean
+	CorsConfigurationSource corsConfigurationSource() {
+		var configuracao = new CorsConfiguration();
+		configuracao.setAllowedOrigins(propriedades.origensPermitidas());
+		configuracao.addAllowedMethod(CorsConfiguration.ALL);
+		configuracao.addAllowedHeader(CorsConfiguration.ALL);
+		configuracao.addExposedHeader(HttpHeaders.LOCATION);
+		configuracao.setMaxAge(propriedades.cachePreflight());
+		var origem = new UrlBasedCorsConfigurationSource();
+		origem.registerCorsConfiguration("/api/**", configuracao);
+		return origem;
 	}
 }

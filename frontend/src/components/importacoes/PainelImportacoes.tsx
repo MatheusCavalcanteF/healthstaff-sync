@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { CalendarDays, Clock } from "lucide-react";
 
 import { CardUpload } from "@/components/importacoes/CardUpload";
-import { importarEscala, importarPonto } from "@/lib/api/endpoints";
+import { importarEscala, importarPonto } from "@/lib/api/navegador";
 import { formatarDia } from "@/lib/formato";
 
 /** Os dois envios do fluxo: escala do setor e relatório de Banco de Horas do Two. */

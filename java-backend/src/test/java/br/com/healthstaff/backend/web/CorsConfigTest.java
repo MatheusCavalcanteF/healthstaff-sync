@@ -16,11 +16,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** CORS para o frontend Next.js (http://localhost:3000 por padrão). */
 @SpringBootTest
 @AutoConfigureMockMvc
+// Perfil com permissão de escrita (importa e reprocessa); as regras de acesso estão em SegurancaTest.
+@WithMockUser(roles = "GESTOR_RH")
 class CorsConfigTest extends IntegracaoComBanco {
 
 	static final String FRONTEND = "http://localhost:3000";

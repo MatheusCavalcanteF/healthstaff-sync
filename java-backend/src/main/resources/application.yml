@@ -32,6 +32,18 @@ server:
     max-swallow-size: 100MB
 
 healthstaff:
+  security:
+    jwt:
+      # Obrigatória, sem padrão (o backend não sobe sem ela): pelo menos 32 bytes.
+      # Gere com: openssl rand -base64 48
+      secret: ${HEALTHSTAFF_JWT_SECRET:}
+      expiracao: ${HEALTHSTAFF_JWT_EXPIRACAO:8h}   # um turno; depois, novo login
+    admin-inicial:
+      # Criado na subida só se não houver nenhum ADMIN ativo; depois é ignorado.
+      nome: ${HEALTHSTAFF_ADMIN_NOME:Administrador}
+      email: ${HEALTHSTAFF_ADMIN_EMAIL:}
+      senha: ${HEALTHSTAFF_ADMIN_SENHA:}
+
   cors:
     # Origens do frontend (Next.js). Em produção, o domínio real (variável CORS_ORIGENS, separadas por vírgula).
     origens-permitidas: ${CORS_ORIGENS:http://localhost:3000}

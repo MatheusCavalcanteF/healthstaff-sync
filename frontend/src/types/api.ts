@@ -246,6 +246,12 @@ export type CodigoErro =
   | "TIPO_INCOMPATIVEL"
   | "FORMATO_NAO_RECONHECIDO"
   | "EXTRACAO_FALHOU"
+  /** Sem token, ou token expirado/inválido: a tela manda para o login. */
+  | "NAO_AUTENTICADO"
+  /** O perfil do usuário não permite a operação (ex.: AUDITOR importando). */
+  | "ACESSO_NEGADO"
+  /** Login recusado (mesma resposta para e-mail inexistente, senha errada ou usuário inativo). */
+  | "CREDENCIAIS_INVALIDAS"
   /** Gerado no próprio frontend quando não há resposta do servidor. */
   | "SEM_CONEXAO"
   | (string & {});
@@ -260,4 +266,26 @@ export interface ProblemDetail {
   codigo?: CodigoErro;
   /** Presente quando o erro se refere a um arquivo enviado. */
   arquivo?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Autenticação — POST /auth/login, GET /auth/eu
+// ---------------------------------------------------------------------------
+
+export type Perfil = "ADMIN" | "GESTOR_RH" | "AUDITOR";
+
+/** UsuarioResponse */
+export interface Usuario {
+  id: UUID;
+  nome: string;
+  email: string;
+  perfil: Perfil;
+}
+
+/** TokenResponse */
+export interface TokenResponse {
+  token: string;
+  tipo: "Bearer";
+  expiraEm: InstanteISO;
+  usuario: Usuario;
 }
