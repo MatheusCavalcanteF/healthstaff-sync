@@ -26,7 +26,9 @@ import br.com.healthstaff.backend.importacao.ArquivoInvalidoException;
 import br.com.healthstaff.backend.importacao.ImportacaoNaoEncontradaException;
 import br.com.healthstaff.backend.regras.AnaliseNaoEncontradaException;
 import br.com.healthstaff.backend.regras.SemEscalaVigenteException;
+import br.com.healthstaff.backend.seguranca.ConflitoUsuarioException;
 import br.com.healthstaff.backend.seguranca.CredenciaisInvalidasException;
+import br.com.healthstaff.backend.seguranca.UsuarioNaoEncontradoException;
 
 /**
  * Erros da API em Problem Details (RFC 9457). Todo corpo de erro traz a
@@ -120,6 +122,16 @@ class ErrosApiHandler {
 	ProblemDetail corpoIlegivel(HttpMessageNotReadableException e) {
 		return problema(HttpStatus.BAD_REQUEST, "Parâmetro inválido", "corpo da requisição ausente ou malformado",
 				"PARAMETRO_INVALIDO");
+	}
+
+	@ExceptionHandler(ConflitoUsuarioException.class)
+	ProblemDetail conflitoUsuario(ConflitoUsuarioException e) {
+		return problema(HttpStatus.CONFLICT, "Operação recusada", e.getMessage(), e.getCodigo());
+	}
+
+	@ExceptionHandler(UsuarioNaoEncontradoException.class)
+	ProblemDetail usuarioNaoEncontrado(UsuarioNaoEncontradoException e) {
+		return problema(HttpStatus.NOT_FOUND, "Usuário não encontrado", e.getMessage(), "USUARIO_NAO_ENCONTRADO");
 	}
 
 	@ExceptionHandler(CredenciaisInvalidasException.class)

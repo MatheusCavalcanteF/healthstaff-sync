@@ -24,6 +24,7 @@ O backend Java precisa estar no ar (`./mvnw spring-boot:run` em `java-backend/`)
 | Rota | Tela |
 | --- | --- |
 | `/login` | Entrada (e-mail e senha) |
+| `/usuarios` | Gestão de usuários (só Administrador; item de menu oculto para os demais) |
 | `/importacoes` | Envio da escala e do relatório de Banco de Horas do Two (oculto para o perfil Auditoria) |
 | `/analises/{AAAA-MM}` | Dashboard do mês |
 | `/analises/{AAAA-MM}/inconformidades` | Alertas do mês |

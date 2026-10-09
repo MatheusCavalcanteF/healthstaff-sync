@@ -39,6 +39,8 @@ public class TokenService {
 	static final String EMISSOR = "healthstaff-backend";
 	static final String CLAIM_PERFIL = "perfil";
 	static final String CLAIM_NOME = "nome";
+	/** Versão das credenciais do usuário ao emitir; diferente da atual = token revogado. */
+	static final String CLAIM_VERSAO = "ver";
 
 	private final JwtEncoder codificador;
 	private final NimbusJwtDecoder decodificador;
@@ -75,6 +77,7 @@ public class TokenService {
 				.expiresAt(expiraEm)
 				.claim(CLAIM_PERFIL, usuario.getPerfil().name())
 				.claim(CLAIM_NOME, usuario.getNome())
+				.claim(CLAIM_VERSAO, usuario.getVersaoCredenciais())
 				.build();
 		var cabecalho = JwsHeader.with(MacAlgorithm.HS256).build();
 		var token = codificador.encode(JwtEncoderParameters.from(cabecalho, claims)).getTokenValue();

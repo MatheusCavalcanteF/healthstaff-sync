@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HeartPulse, LayoutDashboard, LogOut, TriangleAlert, Upload, Users, type LucideIcon } from "lucide-react";
+import {
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  TriangleAlert,
+  Upload,
+  UserCog,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 
 import { sair } from "@/app/login/actions";
 import { ROTULO_PERFIL, type UsuarioSessao } from "@/lib/auth";
@@ -20,9 +29,10 @@ interface ItemMenu {
  * Dashboard e Inconformidades seguem a competência que está na URL (quem
  * está vendo 2026-09 continua em 2026-09). Fora das análises, apontam para
  * /analises, que redireciona para o mês corrente na hora da requisição.
+ * "Usuários" só aparece para ADMIN (a API recusa os demais de qualquer forma).
  */
-function itensDoMenu(competencia: string | null): ItemMenu[] {
-  return [
+function itensDoMenu(competencia: string | null, usuario: UsuarioSessao | null): ItemMenu[] {
+  const itens: ItemMenu[] = [
     {
       href: "/importacoes",
       rotulo: "Importações",
@@ -48,6 +58,15 @@ function itensDoMenu(competencia: string | null): ItemMenu[] {
       ativo: (c) => c.startsWith("/colaboradores"),
     },
   ];
+  if (usuario?.perfil === "ADMIN") {
+    itens.push({
+      href: "/usuarios",
+      rotulo: "Usuários",
+      icone: UserCog,
+      ativo: (c) => c.startsWith("/usuarios"),
+    });
+  }
+  return itens;
 }
 
 export function Sidebar({ usuario }: { usuario: UsuarioSessao | null }) {
@@ -70,7 +89,7 @@ export function Sidebar({ usuario }: { usuario: UsuarioSessao | null }) {
       </div>
 
       <nav aria-label="Principal" className="flex gap-1 overflow-x-auto px-3 pb-3 md:flex-col md:pb-0">
-        {itensDoMenu(competencia).map(({ href, rotulo, icone: Icone, ativo }) => {
+        {itensDoMenu(competencia, usuario).map(({ href, rotulo, icone: Icone, ativo }) => {
           const selecionado = ativo(caminho);
           return (
             <Link

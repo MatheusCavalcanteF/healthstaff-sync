@@ -1,7 +1,5 @@
 package br.com.healthstaff.backend.seguranca;
 
-import java.nio.charset.StandardCharsets;
-
 import jakarta.validation.Valid;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,9 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 class AuthController {
 
-	/** O BCrypt só aceita até 72 bytes; acima disso a senha nem é conferida. */
-	static final int MAXIMO_BYTES_SENHA = 72;
-
 	private final AuthenticationManager autenticacao;
 	private final TokenService tokens;
 
@@ -32,7 +27,7 @@ class AuthController {
 
 	@PostMapping("/login")
 	TokenResponse login(@Valid @RequestBody LoginRequest login) {
-		if (login.senha().getBytes(StandardCharsets.UTF_8).length > MAXIMO_BYTES_SENHA) {
+		if (PoliticaSenha.excedeLimite(login.senha())) {
 			throw new CredenciaisInvalidasException();
 		}
 		try {

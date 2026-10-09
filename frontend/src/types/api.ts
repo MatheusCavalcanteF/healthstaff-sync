@@ -252,6 +252,11 @@ export type CodigoErro =
   | "ACESSO_NEGADO"
   /** Login recusado (mesma resposta para e-mail inexistente, senha errada ou usuário inativo). */
   | "CREDENCIAIS_INVALIDAS"
+  /** Gestão de usuários (409/404). */
+  | "EMAIL_JA_CADASTRADO"
+  | "ULTIMO_ADMIN"
+  | "ALTERACAO_PROPRIA_BLOQUEADA"
+  | "USUARIO_NAO_ENCONTRADO"
   /** Gerado no próprio frontend quando não há resposta do servidor. */
   | "SEM_CONEXAO"
   | (string & {});
@@ -269,7 +274,7 @@ export interface ProblemDetail {
 }
 
 // ---------------------------------------------------------------------------
-// Autenticação — POST /auth/login, GET /auth/eu
+// Autenticação e usuários — POST /auth/login, GET /auth/eu, /usuarios (só ADMIN)
 // ---------------------------------------------------------------------------
 
 export type Perfil = "ADMIN" | "GESTOR_RH" | "AUDITOR";
@@ -280,6 +285,24 @@ export interface Usuario {
   nome: string;
   email: string;
   perfil: Perfil;
+  ativo: boolean;
+  dataCriacao: InstanteISO;
+}
+
+/** NovoUsuarioRequest */
+export interface NovoUsuario {
+  nome: string;
+  email: string;
+  senha: string;
+  perfil: Perfil;
+}
+
+/** AtualizarUsuarioRequest: `senha` vazia ou ausente mantém a atual. */
+export interface AtualizacaoUsuario {
+  nome: string;
+  email: string;
+  perfil: Perfil;
+  senha?: string;
 }
 
 /** TokenResponse */

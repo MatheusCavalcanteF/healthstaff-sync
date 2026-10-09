@@ -1,7 +1,5 @@
 package br.com.healthstaff.backend.seguranca;
 
-import java.nio.charset.StandardCharsets;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,8 +20,6 @@ import org.springframework.util.StringUtils;
 class CriacaoAdminInicial implements ApplicationRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(CriacaoAdminInicial.class);
-
-	static final int TAMANHO_MINIMO_SENHA = 12;
 
 	private final UsuarioRepository usuarios;
 	private final PasswordEncoder senhas;
@@ -49,11 +45,9 @@ class CriacaoAdminInicial implements ApplicationRunner {
 			throw new IllegalStateException("HEALTHSTAFF_ADMIN_EMAIL inválido");
 		}
 		var senha = admin.senha();
-		if (senha.length() < TAMANHO_MINIMO_SENHA
-				|| senha.getBytes(StandardCharsets.UTF_8).length > AuthController.MAXIMO_BYTES_SENHA) {
-			throw new IllegalStateException("HEALTHSTAFF_ADMIN_SENHA precisa ter pelo menos " + TAMANHO_MINIMO_SENHA
-					+ " caracteres e no máximo " + AuthController.MAXIMO_BYTES_SENHA + " bytes");
-		}
+		PoliticaSenha.problema(senha).ifPresent(problema -> {
+			throw new IllegalStateException("HEALTHSTAFF_ADMIN_SENHA inválida: " + problema);
+		});
 		var email = Usuario.normalizarEmail(admin.email());
 		if (usuarios.findByEmail(email).isPresent()) {
 			// Conta existente inativa ou com outro perfil: decisão de quem administra, não da subida.

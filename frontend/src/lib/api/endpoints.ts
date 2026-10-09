@@ -12,6 +12,7 @@ import type {
   ResumoAnalise,
   ResumoReprocessamento,
   TokenResponse,
+  Usuario,
   UUID,
 } from "@/types/api";
 
@@ -22,6 +23,12 @@ import type {
 
 export async function autenticar(email: string, senha: string): Promise<TokenResponse> {
   const { data } = await api.post<TokenResponse>("/auth/login", { email, senha });
+  return data;
+}
+
+/** Só ADMIN (os demais recebem 403 ACESSO_NEGADO). */
+export async function listarUsuarios(): Promise<Usuario[]> {
+  const { data } = await api.get<Usuario[]>("/usuarios");
   return data;
 }
 

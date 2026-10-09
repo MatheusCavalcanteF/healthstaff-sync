@@ -40,6 +40,7 @@ class TokenServiceTest {
 		assertThat(jwt.getSubject()).isEqualTo(usuario.getId().toString());
 		assertThat(jwt.getClaimAsString("perfil")).isEqualTo("AUDITOR");
 		assertThat(jwt.getClaimAsString("nome")).isEqualTo("Ana Teste");
+		assertThat(jwt.<Number>getClaim("ver").intValue()).isEqualTo(usuario.getVersaoCredenciais());
 		assertThat(jwt.getClaimAsString("iss")).isEqualTo("healthstaff-backend");
 		assertThat(jwt.getIssuedAt()).isEqualTo(AGORA);
 		assertThat(jwt.getExpiresAt()).isEqualTo(resposta.expiraEm());

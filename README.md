@@ -61,7 +61,7 @@ O HealthStaff Sync resolve isso:
 | Lucide Icons (`lucide-react`) | Ícones |
 | date-fns | Datas, exibidas sempre no fuso `America/Sao_Paulo` |
 
-Telas: Login, Dashboard do mês, Inconformidades (com filtros e painel de plantões), Colaboradores (busca e paginação server-side) e Importações (upload).
+Telas: Login, Usuários (só ADMIN), Dashboard do mês, Inconformidades (com filtros e painel de plantões), Colaboradores (busca e paginação server-side) e Importações (upload).
 
 O token fica num cookie `httpOnly` lido só pelo servidor do Next: as páginas buscam dados em Server Components, e os uploads do navegador passam pelo repasse `/api/backend/*`, que acrescenta o token. O JavaScript da página nunca vê o JWT.
 
@@ -272,6 +272,10 @@ Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`
 | --- | --- | --- |
 | `POST` | `/auth/login` | `{"email", "senha"}` → token JWT, validade (`expiraEm`) e dados do usuário |
 | `GET` | `/auth/eu` | Usuário do token |
+| `GET` | `/usuarios` | Usuários (só `ADMIN`), ativos e inativos |
+| `POST` | `/usuarios` | Cadastra (`nome`, `email`, `senha`, `perfil`); 409 `EMAIL_JA_CADASTRADO` se o e-mail existir |
+| `PUT` | `/usuarios/{id}` | Atualiza nome, e-mail e perfil; `senha` em branco mantém a atual |
+| `PATCH` | `/usuarios/{id}/status` | `{"ativo": true/false}`; nunca deixa o sistema sem um `ADMIN` ativo (409 `ULTIMO_ADMIN`) |
 | `POST` | `/importacoes/escalas` | Upload da escala (multipart, campo `arquivo`). Envia ao extrator também o cadastro já conhecido, para o casamento de nomes |
 | `POST` | `/importacoes/ponto` | Upload do Banco de Horas do Two (multipart, campo `arquivo`; `dataReferencia` opcional, `AAAA-MM-DD`) |
 | `GET` | `/importacoes/{id}` | Detalhe de uma importação |
@@ -282,7 +286,7 @@ Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`
 
 **Respostas de importação:** `201` + `Location` (importação nova) ou `200` com `duplicada: true` (mesmo arquivo, inclusive em envio simultâneo).
 
-**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EMAIL_JA_CADASTRADO`, `ULTIMO_ADMIN` e `ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO` (404), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
 
 ### Python (interno, só o Java chama)
 
@@ -298,12 +302,12 @@ Erros no formato `ErroApi` (`codigo`, `mensagem`, `campo`, `arquivo`). Falha em 
 
 ## 7. Testes automatizados
 
-Resultado da última execução completa (08/10/2026, com a camada de segurança), sem nenhuma falha:
+Resultado da última execução completa (08/10/2026, com segurança e gestão de usuários), sem nenhuma falha:
 
 | Módulo | Comando | Resultado |
 | --- | --- | --- |
 | python-extractor | `venv\Scripts\python -m pytest` | **367 aprovados** |
-| java-backend | `.\mvnw verify` | **242 testes: 239 aprovados, 3 pulados, 0 falhas** |
+| java-backend | `.\mvnw verify` | **289 testes: 286 aprovados, 3 pulados, 0 falhas** |
 
 Os 3 testes pulados são o `ExtratorE2ETest`, que roda contra o extrator Python real e só é habilitado com `EXTRACTOR_E2E_URL` (e `EXTRACTOR_E2E_API_KEY`) definidas.
 
@@ -340,7 +344,9 @@ npm run build   # inclui a checagem de tipos
 ## 8. Roadmap
 
 - [x] **Autenticação JWT com Spring Security**, com login no frontend (cookie `httpOnly`).
-- [ ] **Controle de acesso por perfis (RBAC) completo**: hoje há a regra mínima (`AUDITOR` só lê; `ADMIN` e `GESTOR_RH` importam e reprocessam). Faltam gestão de usuários pela interface, escopo por setor e trilha de auditoria.
+- [x] **Gestão de usuários pela interface** (só `ADMIN`): cadastro, edição, ativação/desativação, com revogação imediata de sessões.
+- [ ] **Controle de acesso por perfis (RBAC) completo**: hoje há a regra mínima (`AUDITOR` só lê; `ADMIN` e `GESTOR_RH` importam e reprocessam; só `ADMIN` gere usuários). Faltam escopo por setor e trilha de auditoria (quem alterou o quê).
+- [ ] **Troca de senha pelo próprio usuário** (hoje só o `ADMIN` define senhas).
 - [ ] **Proteção contra força bruta no login** (limite de tentativas por e-mail/IP).
 - [ ] **Deploy na nuvem** dos três serviços e do banco gerenciado.
 

@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 
 import { criarApi } from "@/lib/api/client";
-import type { ImportacaoResponse } from "@/types/api";
+import type { AtualizacaoUsuario, ImportacaoResponse, NovoUsuario, Usuario, UUID } from "@/types/api";
 
 /**
  * Chamadas feitas no navegador (uploads). Vão para o repasse do próprio Next
@@ -36,5 +36,23 @@ export async function importarPonto(
   formulario.append("arquivo", arquivo);
   formulario.append("dataReferencia", dataReferencia);
   const { data } = await apiNavegador.post<ImportacaoResponse>("/importacoes/ponto", formulario, MULTIPART);
+  return data;
+}
+
+// Gestão de usuários (só ADMIN; os demais recebem 403 ACESSO_NEGADO).
+
+export async function criarUsuario(dados: NovoUsuario): Promise<Usuario> {
+  const { data } = await apiNavegador.post<Usuario>("/usuarios", dados);
+  return data;
+}
+
+/** `senha` em branco mantém a senha atual. Trocar senha, e-mail ou perfil derruba as sessões do usuário. */
+export async function atualizarUsuario(id: UUID, dados: AtualizacaoUsuario): Promise<Usuario> {
+  const { data } = await apiNavegador.put<Usuario>(`/usuarios/${id}`, { ...dados, senha: dados.senha || undefined });
+  return data;
+}
+
+export async function alterarStatusUsuario(id: UUID, ativo: boolean): Promise<Usuario> {
+  const { data } = await apiNavegador.patch<Usuario>(`/usuarios/${id}/status`, { ativo });
   return data;
 }

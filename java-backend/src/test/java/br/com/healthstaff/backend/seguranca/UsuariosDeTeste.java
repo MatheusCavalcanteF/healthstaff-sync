@@ -13,9 +13,9 @@ public final class UsuariosDeTeste {
 	private UsuariosDeTeste() {
 	}
 
-	/** O usuário com este e-mail, criado (ativo, com {@link #SENHA}) se ainda não existir. */
+	/** O usuário com este e-mail (nome = parte antes do @), criado ativo e com {@link #SENHA} se ainda não existir. */
 	public static Usuario obter(UsuarioRepository usuarios, String email, Perfil perfil) {
 		return usuarios.findByEmail(Usuario.normalizarEmail(email))
-				.orElseGet(() -> usuarios.save(Usuario.novo("Usuária de Teste", email, HASH_SENHA, perfil)));
+				.orElseGet(() -> usuarios.save(Usuario.novo(email.substring(0, email.indexOf('@')), email, HASH_SENHA, perfil)));
 	}
 }

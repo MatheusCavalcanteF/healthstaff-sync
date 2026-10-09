@@ -2,12 +2,15 @@ import type { Perfil } from "@/types/api";
 
 /** Quem está logado, para a interface (nome no menu, esconder ações do perfil). */
 export interface UsuarioSessao {
+  id: string;
   nome: string;
   perfil: Perfil;
 }
 
 /** Cookie httpOnly com o JWT do backend (lido só no servidor do Next). */
 export const COOKIE_SESSAO = "hs_sessao";
+
+export const PERFIS: Perfil[] = ["ADMIN", "GESTOR_RH", "AUDITOR"];
 
 export const ROTULO_PERFIL: Record<Perfil, string> = {
   ADMIN: "Administrador",

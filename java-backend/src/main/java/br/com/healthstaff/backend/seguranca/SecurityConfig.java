@@ -29,6 +29,7 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  *
  * <ul>
  * <li>Livres: {@code POST /api/v1/auth/login} e o healthcheck do Actuator.</li>
+ * <li>{@code /api/v1/usuarios/**} (gestão de usuários, qualquer método): só ADMIN.</li>
  * <li>{@code GET /api/v1/**}: qualquer usuário autenticado.</li>
  * <li>Demais métodos em {@code /api/v1/**} (importações, reprocessar análise):
  * só ADMIN e GESTOR_RH. Endpoint de escrita novo já nasce protegido.</li>
@@ -61,6 +62,7 @@ class SecurityConfig {
 						.requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
 						.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**", "/actuator/info")
 						.permitAll()
+						.requestMatchers("/api/v1/usuarios", "/api/v1/usuarios/**").hasRole(Perfil.ADMIN.name())
 						.requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
 						.requestMatchers("/api/v1/**").hasAnyRole(Perfil.ADMIN.name(), Perfil.GESTOR_RH.name())
 						.anyRequest().denyAll())

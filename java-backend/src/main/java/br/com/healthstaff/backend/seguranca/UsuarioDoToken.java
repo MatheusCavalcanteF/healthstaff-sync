@@ -12,8 +12,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Transforma um JWT válido no usuário autenticado, lido do banco: usuário
- * removido ou inativo perde o acesso mesmo com token dentro da validade, e as
- * autoridades vêm do perfil atual, não do que estava no token.
+ * removido ou inativo, ou token de antes de uma troca de senha, e-mail ou
+ * perfil (versão das credenciais diferente), perde o acesso mesmo dentro da
+ * validade. As autoridades vêm do perfil atual, não do que estava no token.
  */
 @Component
 class UsuarioDoToken implements Converter<Jwt, AbstractAuthenticationToken> {
@@ -29,8 +30,14 @@ class UsuarioDoToken implements Converter<Jwt, AbstractAuthenticationToken> {
 		var usuario = id(jwt.getSubject())
 				.flatMap(usuarios::findById)
 				.filter(Usuario::isEnabled)
+				.filter(encontrado -> versao(jwt) == encontrado.getVersaoCredenciais())
 				.orElseThrow(() -> new InvalidBearerTokenException("usuário do token inexistente ou inativo"));
 		return UsernamePasswordAuthenticationToken.authenticated(usuario, jwt, usuario.getAuthorities());
+	}
+
+	/** Token sem a claim (emitido antes da revogação existir) nunca bate. */
+	private static long versao(Jwt jwt) {
+		return jwt.getClaim(TokenService.CLAIM_VERSAO) instanceof Number numero ? numero.longValue() : -1;
 	}
 
 	private static Optional<UUID> id(String sujeito) {

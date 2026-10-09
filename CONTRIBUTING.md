@@ -18,10 +18,11 @@
 - **Fluxo:** Frontend -> Java (`POST /api/v1/importacoes/*`) -> Python (`POST /extracoes`) -> JSON -> Java persiste e valida.
 - **Endpoints do Java (expostos ao frontend):** todos exigem `Authorization: Bearer <jwt>` (ver Segurança), menos o login. Importações: multipart com o campo `arquivo`.
   - `POST /api/v1/auth/login` (`{"email","senha"}` -> `TokenResponse`) e `GET /api/v1/auth/eu`.
+  - `/api/v1/usuarios` (só ADMIN): `GET` (todos, por nome), `GET /{id}`, `POST` (201 + `Location`), `PUT /{id}` (senha em branco mantém a atual), `PATCH /{id}/status` (`{"ativo": bool}`). Sem DELETE: desativar preserva o histórico.
   - `POST /api/v1/importacoes/escalas`: envia ao extrator a escala **e o cadastro já conhecido** (matrícula + nome de todos no banco), para o casamento aproximado de nomes funcionar com a escala sozinha.
   - `POST /api/v1/importacoes/ponto` (+ `dataReferencia` opcional, AAAA-MM-DD).
   - `GET /api/v1/importacoes/{id}`.
-  - 201 + `Location` (novo) | 200 com `duplicada: true` (mesmo arquivo, inclusive envio simultâneo). Erros em Problem Details (RFC 9457) sempre com `codigo`: `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EXTRATOR_INDISPONIVEL` (503, sem detalhe interno) ou o código do extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+  - 201 + `Location` (novo) | 200 com `duplicada: true` (mesmo arquivo, inclusive envio simultâneo). Erros em Problem Details (RFC 9457) sempre com `codigo`: `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EMAIL_JA_CADASTRADO`/`ULTIMO_ADMIN`/`ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO`, `EXTRATOR_INDISPONIVEL` (503, sem detalhe interno) ou o código do extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
   - A chamada ao extrator fica fora da transação; a gravação é uma transação única.
 - **Endpoints do Python (internos, só o Java chama):**
   - `POST /extracoes`: multipart com `escala` e/ou `banco_horas`, `data_referencia_ponto` e `cadastro` (JSON `[{"matricula","nome"}]`) opcionais. O matcher usa o `cadastro` somado ao Banco de Horas enviado (este prevalece).
@@ -59,8 +60,10 @@
   - `GET /api/v1/colaboradores`: paginado (`pagina` desde 0, `tamanho` 1-200), filtros `vinculo` (OFICIAL/PROVISORIO) e `busca` (nome sem acento ou início da matrícula); traz categoria (nula se o cargo é desconhecido) e saldo mais recente do Two. Formato de página: `web.Pagina`.
 - **CORS:** `web.CorsConfig` libera `/api/**` para as origens de `healthstaff.cors.origens-permitidas` (padrão `http://localhost:3000`; variável `CORS_ORIGENS`), todos os métodos/headers, expondo `Location`. Nunca usar `*`. É um `CorsConfigurationSource` aplicado pelo filtro do Spring Security (`http.cors()`), antes da autenticação: preflight sem token e 401/403 com cabeçalhos CORS.
 - **Segurança** (`seguranca`): Spring Security sem estado + JWT HS256 nativo (`spring-boot-starter-security-oauth2-resource-server`, Nimbus). O `jjwt` foi descartado: o `jjwt-jackson` puxaria o Jackson 2 ao lado do Jackson 3.
-  - Livres: `POST /api/v1/auth/login` e `/actuator/health`. `GET /api/v1/**`: qualquer perfil. Demais métodos em `/api/v1/**`: só `ADMIN` e `GESTOR_RH` (`AUDITOR` é só leitura). Qualquer outra rota: negada.
-  - `UsuarioDoToken` recarrega o usuário do banco a cada requisição: desativar ou trocar o perfil vale na hora, sem esperar o token expirar.
+  - Livres: `POST /api/v1/auth/login` e `/actuator/health`. `/api/v1/usuarios/**` (qualquer método): só `ADMIN`, regra no `SecurityConfig` (sem `@PreAuthorize`: um ponto só para acesso por rota). `GET /api/v1/**`: qualquer perfil. Demais métodos em `/api/v1/**`: só `ADMIN` e `GESTOR_RH` (`AUDITOR` é só leitura). Qualquer outra rota: negada.
+  - `UsuarioDoToken` recarrega o usuário do banco a cada requisição e compara a claim `ver` do token com `usuario.versao_credenciais`: trocar senha, e-mail ou perfil, ou desativar, incrementa a versão e derruba as sessões abertas na hora (reativar não ressuscita tokens antigos).
+  - `UsuarioService`: e-mail único (409, também pelo unique do banco em corrida); sempre resta um ADMIN ativo (desativar ou rebaixar; os admins ativos ficam travados com `select ... for update`, então dois admins se desativando ao mesmo tempo não zeram o sistema); ninguém desativa a si mesmo nem tira o próprio perfil de ADMIN. Pela API, `ULTIMO_ADMIN` só é alcançável em corrida (quem chama é sempre outro admin ativo); `UsuarioServiceTest` cobre isso em paralelo.
+  - Senha: `PoliticaSenha` (12 caracteres a 72 bytes, limite do BCrypt), a mesma para o admin inicial e para a API.
   - 401/403 saem pelo `ErrosApiHandler` (os filtros delegam ao `handlerExceptionResolver`). Login recusado tem sempre a mesma resposta (e-mail inexistente, senha errada, inativo) e passa pelo BCrypt também para inativos (sem vazar a conta pelo tempo).
   - `HEALTHSTAFF_JWT_SECRET` é obrigatória (>= 32 bytes, sem padrão: o backend não sobe sem ela). Validade em `HEALTHSTAFF_JWT_EXPIRACAO` (padrão 8h, sem refresh).
   - **Nenhum usuário em migração** (senha no histórico do Git valeria em todo ambiente): `CriacaoAdminInicial` cria o primeiro ADMIN na subida a partir de `HEALTHSTAFF_ADMIN_EMAIL`/`HEALTHSTAFF_ADMIN_SENHA` (>= 12 caracteres), só se não houver ADMIN ativo.
@@ -74,9 +77,9 @@
 - `src/types/api.ts` espelha os DTOs Java (atualizar junto quando um record de resposta mudar). `src/lib/api/client.ts`: toda falha vira `ApiError` com o `ProblemDetail` (`erro.codigo`; `SEM_CONEXAO` quando o backend não responde).
 - **Sessão:** o login é uma Server Action (`app/login/actions.ts`) que grava o JWT num cookie `httpOnly` + `SameSite=Lax` (`hs_sessao`, `lib/sessao.ts`, só no servidor). O navegador nunca vê o token nem fala direto com o backend:
   - Server Components chamam via `lib/api/endpoints.ts` (`server-only`; `apiServidor` acrescenta o Bearer; 401 `NAO_AUTENTICADO` -> `/login?motivo=sessao-expirada`).
-  - O navegador (uploads) chama `lib/api/navegador.ts` -> `app/api/backend/[...caminho]` (repasse que lê o cookie; recusa `..` e `Sec-Fetch-Site: cross-site`).
+  - O navegador (uploads, gestão de usuários) chama `lib/api/navegador.ts` -> `app/api/backend/[...caminho]` (repasse que lê o cookie; recusa `..` e `Sec-Fetch-Site: cross-site`).
   - `src/proxy.ts` (antigo middleware) só confere se o cookie existe; `/api/` fica fora do matcher (o proxy bufferizaria uploads acima de 10 MB). Nome e perfil exibidos vêm do payload do JWT sem verificar a assinatura: só interface; quem barra é o backend.
-- Páginas de dados buscam no servidor (Server Components). Datas exibidas no fuso `America/Sao_Paulo`, independente do fuso do servidor.
+- Páginas de dados buscam no servidor (Server Components); depois de uma alteração no navegador, `router.refresh()` recarrega os dados. Erros de API viram `BannerErro` (`components/estado/Banner.tsx`, título por `codigo`). Datas exibidas no fuso `America/Sao_Paulo`, independente do fuso do servidor.
 - Erros esperados viram estados de tela: `ANALISE_NAO_ENCONTRADA` -> estado vazio com atalho para Importações; demais -> mensagem de erro (nunca confundir "sem dados" com "servidor fora").
 
 ## Dados sensíveis (LGPD)

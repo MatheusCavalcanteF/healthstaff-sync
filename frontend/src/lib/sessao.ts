@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { COOKIE_SESSAO, type UsuarioSessao } from "@/lib/auth";
+import { COOKIE_SESSAO, PERFIS, type UsuarioSessao } from "@/lib/auth";
 import type { Perfil } from "@/types/api";
 
 export async function lerToken(): Promise<string | undefined> {
@@ -21,6 +21,7 @@ export async function lerUsuarioSessao(): Promise<UsuarioSessao | null> {
   }
   try {
     const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
+      sub?: unknown;
       nome?: unknown;
       perfil?: unknown;
       exp?: unknown;
@@ -28,10 +29,14 @@ export async function lerUsuarioSessao(): Promise<UsuarioSessao | null> {
     if (typeof claims.exp === "number" && claims.exp * 1000 <= Date.now()) {
       return null;
     }
-    if (typeof claims.nome !== "string" || !["ADMIN", "GESTOR_RH", "AUDITOR"].includes(String(claims.perfil))) {
+    if (
+      typeof claims.sub !== "string" ||
+      typeof claims.nome !== "string" ||
+      !PERFIS.includes(claims.perfil as Perfil)
+    ) {
       return null;
     }
-    return { nome: claims.nome, perfil: claims.perfil as Perfil };
+    return { id: claims.sub, nome: claims.nome, perfil: claims.perfil as Perfil };
   } catch {
     return null;
   }

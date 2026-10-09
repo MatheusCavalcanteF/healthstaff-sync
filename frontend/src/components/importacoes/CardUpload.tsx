@@ -4,7 +4,8 @@ import { useId, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { FileCheck2, LoaderCircle, Upload, X, type LucideIcon } from "lucide-react";
 
-import { BannerErro, BannerSucesso } from "@/components/importacoes/Banners";
+import { BannerErro } from "@/components/estado/Banner";
+import { BannerSucesso } from "@/components/importacoes/Banners";
 import { ApiError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
 import type { ImportacaoResponse } from "@/types/api";
@@ -218,7 +219,9 @@ export function CardUpload({ titulo, descricao, icone: Icone, extensoes, extras,
         {resultado?.estado === "sucesso" && (
           <BannerSucesso resposta={resultado.resposta} aoFechar={() => setResultado(null)} />
         )}
-        {resultado?.estado === "erro" && <BannerErro erro={resultado.erro} aoFechar={() => setResultado(null)} />}
+        {resultado?.estado === "erro" && (
+          <BannerErro tituloPadrao="Falha na importação" erro={resultado.erro} aoFechar={() => setResultado(null)} />
+        )}
       </div>
     </section>
   );

@@ -44,6 +44,13 @@ public class Usuario implements UserDetails {
 	@Column(name = "data_criacao", nullable = false)
 	private Instant dataCriacao;
 
+	/**
+	 * Vai no token (claim "ver"); muda quando senha, e-mail ou perfil mudam ou a
+	 * conta é desativada, e aí os tokens antigos deixam de valer.
+	 */
+	@Column(name = "versao_credenciais", nullable = false)
+	private int versaoCredenciais;
+
 	protected Usuario() {
 	}
 
@@ -65,8 +72,37 @@ public class Usuario implements UserDetails {
 		return email.strip().toLowerCase(Locale.ROOT);
 	}
 
+	/** Nome, e-mail e perfil; mudar e-mail ou perfil derruba as sessões abertas. */
+	public void atualizar(String nome, String email, Perfil perfil) {
+		var novoEmail = normalizarEmail(email);
+		if (!novoEmail.equals(this.email) || perfil != this.perfil) {
+			versaoCredenciais++;
+		}
+		this.nome = nome.strip();
+		this.email = novoEmail;
+		this.perfil = perfil;
+	}
+
+	/** @param senhaHash hash já calculado; derruba as sessões abertas */
+	public void trocarSenha(String senhaHash) {
+		this.senhaHash = senhaHash;
+		versaoCredenciais++;
+	}
+
+	public void ativar() {
+		ativo = true;
+	}
+
+	/** Derruba as sessões abertas, inclusive para quando a conta for reativada. */
 	public void desativar() {
-		ativo = false;
+		if (ativo) {
+			ativo = false;
+			versaoCredenciais++;
+		}
+	}
+
+	public boolean ehAdminAtivo() {
+		return ativo && perfil == Perfil.ADMIN;
 	}
 
 	public UUID getId() {
@@ -91,6 +127,10 @@ public class Usuario implements UserDetails {
 
 	public Instant getDataCriacao() {
 		return dataCriacao;
+	}
+
+	public int getVersaoCredenciais() {
+		return versaoCredenciais;
 	}
 
 	@Override
