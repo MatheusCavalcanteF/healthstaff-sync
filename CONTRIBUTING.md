@@ -82,6 +82,10 @@
 - Páginas de dados buscam no servidor (Server Components); depois de uma alteração no navegador, `router.refresh()` recarrega os dados. Erros de API viram `BannerErro` (`components/estado/Banner.tsx`, título por `codigo`). Datas exibidas no fuso `America/Sao_Paulo`, independente do fuso do servidor.
 - Erros esperados viram estados de tela: `ANALISE_NAO_ENCONTRADA` -> estado vazio com atalho para Importações; demais -> mensagem de erro (nunca confundir "sem dados" com "servidor fora").
 
+## CI (GitHub Actions)
+- `.github/workflows/ci.yml`: push na `main` e PR para a `main`, três jobs paralelos (`java-backend` com `./mvnw verify -B`; `python-extractor` com `pytest` + `schema/` sem diff após `python -m api.schema`; `next-frontend` com `npm ci`, lint e build). Versões iguais às de produção: Java 25, Python 3.13 (Dockerfile), Node 24.
+- Mudou um modelo do extrator: regenerar e versionar o schema, senão o CI falha (o Java gera o cliente a partir dele).
+
 ## Dados sensíveis (LGPD)
 - Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.
 - `tests/test_arquivos_reais.py` valida só invariantes e é pulado quando os arquivos reais não estão presentes.

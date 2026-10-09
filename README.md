@@ -1,5 +1,7 @@
 # HealthStaff Sync
 
+[![CI](https://github.com/MatheusCavalcanteF/healthstaff-sync/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MatheusCavalcanteF/healthstaff-sync/actions/workflows/ci.yml)
+
 Conciliador de escalas de enfermagem e banco de horas, com auditoria automática de inconformidades trabalhistas.
 
 O HealthStaff Sync lê as escalas mensais dos setores (PDF ou Excel) e o relatório de Banco de Horas do sistema de ponto **Two** (Excel ou CSV), cruza as duas fontes por colaborador e aponta, mês a mês, o que fere a legislação ou a política do hospital.
@@ -310,6 +312,18 @@ Resultado da última execução completa (08/10/2026, com segurança e gestão d
 | java-backend | `.\mvnw verify` | **289 testes: 286 aprovados, 3 pulados, 0 falhas** |
 
 Os 3 testes pulados são o `ExtratorE2ETest`, que roda contra o extrator Python real e só é habilitado com `EXTRACTOR_E2E_URL` (e `EXTRACTOR_E2E_API_KEY`) definidas.
+
+### Integração contínua
+
+O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda a cada push na `main` e em todo pull request para a `main`, com três jobs em paralelo no `ubuntu-latest`:
+
+| Job | Ambiente | Passos |
+| --- | --- | --- |
+| `java-backend` | JDK 25 (Temurin), cache do Maven | `./mvnw verify -B` (Postgres embutido, sem Docker); relatórios do Surefire como artefato se falhar |
+| `python-extractor` | Python 3.13 (o mesmo da imagem Docker), cache do pip | `pytest` e checagem de que `schema/` está em dia com os modelos (`python -m api.schema` sem diff) |
+| `next-frontend` | Node.js 24 LTS, cache do npm | `npm ci`, `npm run lint` e `npm run build` (inclui a checagem de tipos) |
+
+A checagem do schema existe porque o backend gera o cliente do extrator a partir do `openapi.json` versionado: um modelo Python alterado sem regenerar o schema faria o Java compilar contra um contrato velho.
 
 ### Python
 
