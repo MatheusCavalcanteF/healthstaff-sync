@@ -1,0 +1,54 @@
+# Atualizações semanais de dependências (segunda-feira, horário de Brasília).
+#
+# ATENÇÃO: o java-backend/pom.xml força versões por cima do Spring Boot por causa de CVEs
+# (tomcat.version e jackson-bom.version). O Dependabot não remove esses overrides: ao
+# atualizar o Spring Boot, remova cada um quando o novo Boot já trouxer a mesma versão ou
+# maior. As execuções "revisar-override-*" do maven-enforcer-plugin derrubam o build até
+# alguém revisar.
+#
+# Minor e patch vêm agrupados num PR por ecossistema; major chega em PRs separados.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /java-backend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    groups:
+      minor-e-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: pip
+    directory: /python-extractor
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    groups:
+      minor-e-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    groups:
+      minor-e-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: America/Sao_Paulo
+    groups:
+      minor-e-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
