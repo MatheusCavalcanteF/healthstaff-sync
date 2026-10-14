@@ -24,6 +24,11 @@
 		<embedded-postgres-binaries.version>18.6.0</embedded-postgres-binaries.version>
 		<!-- Contrato publicado pelo python-extractor (python -m api.schema). -->
 		<extrator.openapi>${project.basedir}/../python-extractor/schema/openapi.json</extrator.openapi>
+		<!-- O Boot 4.1.1 traz o Tomcat 11.0.24 (CVE-2026-65182, CVE-2026-65905, CVE-2026-68525;
+		     corrigidos no 11.0.25). REMOVER esta linha ao atualizar para um Spring Boot que já
+		     traga o Tomcat 11.0.27 ou maior. A execução "revisar-override-tomcat" do
+		     maven-enforcer-plugin derruba o build se o Boot mudar com este override ainda aqui. -->
+		<tomcat.version>11.0.27</tomcat.version>
 	</properties>
 
 	<dependencyManagement>
@@ -137,6 +142,34 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<!--
+				Trava do override de tomcat.version (ver <properties>): com o Boot fora do
+				4.1.1, o build falha no validate até alguém revisar o override. Remover esta
+				execução junto com o override.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-enforcer-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>revisar-override-tomcat</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireProperty>
+									<property>project.parent.version</property>
+									<regex>4\.1\.1</regex>
+									<!-- Sem acentos: o console do Maven no Windows os corrompe. -->
+									<regexMessage>O spring-boot-starter-parent mudou para ${project.parent.version}, mas o pom ainda forca o Tomcat ${tomcat.version} (override em tomcat.version). Se o novo Spring Boot ja traz o Tomcat ${tomcat.version} ou maior, remova o override e a execucao revisar-override-tomcat do maven-enforcer-plugin; se nao, revise a regra para a nova versao.</regexMessage>
+								</requireProperty>
+							</rules>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 
 			<!--
