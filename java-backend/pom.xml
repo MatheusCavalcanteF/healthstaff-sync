@@ -29,6 +29,13 @@
 		     traga o Tomcat 11.0.27 ou maior. A execução "revisar-override-tomcat" do
 		     maven-enforcer-plugin derruba o build se o Boot mudar com este override ainda aqui. -->
 		<tomcat.version>11.0.27</tomcat.version>
+		<!-- O Boot 4.1.1 traz o Jackson 3.1.5 (CVE-2026-68497, CVE-2026-19032, CVE-2026-83557,
+		     CVE-2026-91776, CVE-2026-91777, CVE-2026-89407 e CVE-2026-89425; corrigidos no 3.1.7).
+		     REMOVER esta linha ao atualizar para um Spring Boot que já traga o Jackson 3.1.7 ou
+		     maior. A execução "revisar-override-jackson" do maven-enforcer-plugin derruba o build
+		     se o Boot mudar com este override ainda aqui. O Jackson 2 não está na árvore (só o
+		     jackson-annotations 2.21, que o próprio Jackson 3 usa): sem override do jackson-2-bom. -->
+		<jackson-bom.version>3.1.7</jackson-bom.version>
 	</properties>
 
 	<dependencyManagement>
@@ -145,9 +152,9 @@
 			</plugin>
 
 			<!--
-				Trava do override de tomcat.version (ver <properties>): com o Boot fora do
-				4.1.1, o build falha no validate até alguém revisar o override. Remover esta
-				execução junto com o override.
+				Travas dos overrides de tomcat.version e jackson-bom.version (ver <properties>):
+				com o Boot fora do 4.1.1, o build falha no validate até alguém revisar cada
+				override. Remover cada execução junto com o seu override.
 			-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -165,6 +172,21 @@
 									<regex>4\.1\.1</regex>
 									<!-- Sem acentos: o console do Maven no Windows os corrompe. -->
 									<regexMessage>O spring-boot-starter-parent mudou para ${project.parent.version}, mas o pom ainda forca o Tomcat ${tomcat.version} (override em tomcat.version). Se o novo Spring Boot ja traz o Tomcat ${tomcat.version} ou maior, remova o override e a execucao revisar-override-tomcat do maven-enforcer-plugin; se nao, revise a regra para a nova versao.</regexMessage>
+								</requireProperty>
+							</rules>
+						</configuration>
+					</execution>
+					<execution>
+						<id>revisar-override-jackson</id>
+						<goals>
+							<goal>enforce</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<requireProperty>
+									<property>project.parent.version</property>
+									<regex>4\.1\.1</regex>
+									<regexMessage>O spring-boot-starter-parent mudou para ${project.parent.version}, mas o pom ainda forca o Jackson ${jackson-bom.version} (override em jackson-bom.version). Se o novo Spring Boot ja traz o Jackson ${jackson-bom.version} ou maior, remova o override e a execucao revisar-override-jackson do maven-enforcer-plugin; se nao, revise a regra para a nova versao.</regexMessage>
 								</requireProperty>
 							</rules>
 						</configuration>
