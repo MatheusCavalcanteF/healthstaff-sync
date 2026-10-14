@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -62,9 +63,6 @@ class ExtratorClientTest extends IntegracaoComBanco {
 
 	@Autowired
 	ExtratorClient cliente;
-
-	@Autowired
-	ExtratorHealthIndicator saude;
 
 	@Autowired
 	JsonMapper jsonMapper;
@@ -310,6 +308,7 @@ class ExtratorClientTest extends IntegracaoComBanco {
 				portaLivre = socket.getLocalPort();
 			}
 			var desligado = new ExtratorClient(
+					RestClient.builder().baseUrl("http://127.0.0.1:" + portaLivre).build(),
 					RestClient.builder().baseUrl("http://127.0.0.1:" + portaLivre).build(), jsonMapper);
 
 			assertThatThrownBy(() -> desligado.extrair(escalaEBancoHoras()))
@@ -321,11 +320,16 @@ class ExtratorClientTest extends IntegracaoComBanco {
 	@Nested
 	class Saude {
 
+		/** Indicador novo a cada teste: o do contexto guarda o último resultado por 10s. */
+		ExtratorHealthIndicator indicador() {
+			return new ExtratorHealthIndicator(cliente, Clock.systemUTC());
+		}
+
 		@Test
 		void extratorNoAr() {
 			EXTRATOR.responder(200, "{\"status\": \"ok\", \"versao\": \"1.0.0\"}");
 
-			var health = saude.health();
+			var health = indicador().health();
 
 			assertThat(health.getStatus()).isEqualTo(Status.UP);
 			assertThat(health.getDetails()).containsEntry("versao", "1.0.0");
@@ -336,10 +340,22 @@ class ExtratorClientTest extends IntegracaoComBanco {
 		void extratorComProblema() {
 			EXTRATOR.responder(503, "indisponível", "text/plain");
 
-			var health = saude.health();
+			var health = indicador().health();
 
 			assertThat(health.getStatus()).isEqualTo(Status.DOWN);
 			assertThat(health.getDetails()).containsKey("erro");
+		}
+
+		@Test
+		void consultaTemPrazoProprioCurto() {
+			EXTRATOR.atrasar(Duration.ofSeconds(10));
+
+			var inicio = System.nanoTime();
+			assertThatThrownBy(cliente::saude).isInstanceOf(ExtratorIndisponivelException.class);
+
+			// timeout-saude (3s): nem os 2s de extração deste teste nem os 120s do padrão.
+			assertThat(Duration.ofNanos(System.nanoTime() - inicio))
+					.isBetween(Duration.ofMillis(2500), Duration.ofSeconds(10));
 		}
 	}
 }

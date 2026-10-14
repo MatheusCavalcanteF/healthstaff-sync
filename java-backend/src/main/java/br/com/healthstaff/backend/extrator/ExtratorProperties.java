@@ -16,6 +16,8 @@ import org.springframework.validation.annotation.Validated;
  * @param apiKey          enviada no cabeçalho {@code X-API-Key}; vazia = sem autenticação
  * @param timeoutConexao  tempo máximo para abrir a conexão
  * @param timeoutLeitura  tempo máximo de espera pela extração (arquivos grandes demoram)
+ * @param timeoutSaude    prazo da consulta de saúde ({@code GET /health}), para conectar e
+ *                        para responder: curto, para o healthcheck não ficar preso
  */
 @Validated
 @ConfigurationProperties("healthstaff.extrator")
@@ -23,7 +25,8 @@ public record ExtratorProperties(
 		@NotNull URI url,
 		String apiKey,
 		@DefaultValue("5s") Duration timeoutConexao,
-		@DefaultValue("120s") Duration timeoutLeitura) {
+		@DefaultValue("120s") Duration timeoutLeitura,
+		@DefaultValue("3s") Duration timeoutSaude) {
 
 	public boolean possuiApiKey() {
 		return apiKey != null && !apiKey.isBlank();

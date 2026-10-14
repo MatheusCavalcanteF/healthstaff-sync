@@ -78,7 +78,7 @@ O token fica num cookie `httpOnly` lido só pelo servidor do Next: as páginas b
 | RestClient (HTTP/1.1, Jackson 3) | `ExtratorClient`, cliente do extrator |
 | openapi-generator | Gera as classes do contrato a partir de `python-extractor/schema/openapi.json` a cada build |
 | Spring Security + JWT (OAuth2 Resource Server / Nimbus) | API sem estado, token HS256, perfis `ADMIN`, `GESTOR_RH` e `AUDITOR` |
-| Spring Boot Actuator | `/actuator/health`, com o componente `extrator` |
+| Spring Boot Actuator | Só `/actuator/health`: sem token, apenas o status geral; componentes (inclusive o `extrator`) só para `ADMIN`. O estado do extrator é reaproveitado por 10s, com uma consulta por vez e prazo de 3s |
 
 Erros seguem Problem Details (RFC 9457), sempre com um campo `codigo`.
 
@@ -257,8 +257,10 @@ npm run dev
 | Serviço | URL |
 | --- | --- |
 | Frontend | <http://localhost:3000> |
-| API Java | <http://localhost:8080> (`/api/v1/...`; saúde em `/actuator/health`) |
+| API Java | <http://localhost:8080> (`/api/v1/...`; saúde em `/actuator/health`, detalhada só com token de `ADMIN`) |
 | Extrator Python | <http://localhost:8000> (documentação interativa em `/docs`) |
+
+Healthcheck de container (Docker, Kubernetes): use `/actuator/health/liveness`, que não chama o extrator. Com o extrator fora do ar, `/actuator/health` responde 503 a qualquer um.
 
 Para encerrar: `docker compose down` (com `-v` também apaga os dados do PostgreSQL).
 

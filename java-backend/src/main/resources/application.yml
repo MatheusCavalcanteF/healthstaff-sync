@@ -53,7 +53,8 @@ healthstaff:
     url: ${EXTRACTOR_URL:http://localhost:8000}
     api-key: ${EXTRACTOR_API_KEY:}
     timeout-conexao: 5s
-    timeout-leitura: 120s
+    timeout-leitura: 120s   # extração (arquivos grandes demoram)
+    timeout-saude: 3s       # GET /health do healthcheck: conexão e resposta
 
   regras:
     # Motor de regras (valores padrão; ajuste conforme a política do hospital).
@@ -76,8 +77,14 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health
   endpoint:
     health:
-      show-components: always
+      # Anônimo e perfis não-ADMIN recebem só o status (e os nomes dos grupos de probes);
+      # componentes e detalhes (inclusive o do extrator) só com token de ADMIN.
+      show-components: when-authorized
       show-details: when-authorized
+      roles: ADMIN
+      # Sem cache do Actuator (management.endpoint.health.cache): ele é por usuário e
+      # ignorado com parâmetros na URL. O ExtratorHealthIndicator guarda o último
+      # resultado por 10s para qualquer requisição e consulta o extrator uma vez por vez.

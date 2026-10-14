@@ -11,6 +11,7 @@ import br.com.healthstaff.backend.extrator.contrato.LoteImportacao;
 import br.com.healthstaff.backend.extrator.contrato.LoteImportacao.VersaoContratoEnum;
 import br.com.healthstaff.backend.extrator.contrato.ResultadoExtracao;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -45,10 +46,13 @@ public class ExtratorClient {
 	};
 
 	private final RestClient restClient;
+	private final RestClient restClientSaude;
 	private final JsonMapper jsonMapper;
 
-	public ExtratorClient(RestClient extratorRestClient, JsonMapper jsonMapper) {
+	public ExtratorClient(@Qualifier("extratorRestClient") RestClient extratorRestClient,
+			@Qualifier("extratorSaudeRestClient") RestClient extratorSaudeRestClient, JsonMapper jsonMapper) {
 		this.restClient = extratorRestClient;
+		this.restClientSaude = extratorSaudeRestClient;
 		this.jsonMapper = jsonMapper;
 	}
 
@@ -88,10 +92,10 @@ public class ExtratorClient {
 		}
 	}
 
-	/** Consulta {@code GET /health}; usado pelo indicador do Actuator. */
+	/** Consulta {@code GET /health} com o prazo curto do healthcheck; usado pelo indicador do Actuator. */
 	public Map<String, Object> saude() {
 		try {
-			var corpo = restClient.get().uri("/health").retrieve().body(MAPA);
+			var corpo = restClientSaude.get().uri("/health").retrieve().body(MAPA);
 			return corpo != null ? corpo : Map.of();
 		}
 		catch (RestClientException e) {
