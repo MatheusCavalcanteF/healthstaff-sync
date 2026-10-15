@@ -14,8 +14,13 @@ Quando os dois arquivos vêm juntos, o Banco de Horas é extraído primeiro e
 serve de cadastro para inferir a matrícula de quem está na escala.
 
 Configuração por variáveis de ambiente:
-- ``EXTRACTOR_API_KEY``: se definida, exige o cabeçalho ``X-API-Key``.
+- ``EXTRACTOR_AMBIENTE``: ``producao`` (padrão) ou ``desenvolvimento``.
+- ``EXTRACTOR_API_KEY``: exige o cabeçalho ``X-API-Key``. Obrigatória em
+  produção (o serviço não sobe sem ela); vazia só em desenvolvimento.
 - ``EXTRACTOR_MAX_UPLOAD_MB``: tamanho máximo por arquivo (padrão 20).
+
+Em produção, ``/docs``, ``/redoc`` e ``/openapi.json`` ficam desligados (o
+contrato versionado está em ``schema/``).
 """
 
 import logging
@@ -52,6 +57,7 @@ logger = logging.getLogger(__name__)
 
 VERSAO_API = "1.0.0"
 TAMANHO_MAXIMO_PADRAO_MB = 20
+AMBIENTES = ("desenvolvimento", "producao")
 TIPOS_ESCALA = {TipoDocumento.ESCALA_PDF, TipoDocumento.ESCALA_EXCEL}
 TIPOS_BANCO_HORAS = {TipoDocumento.PONTO_EXCEL, TipoDocumento.PONTO_CSV}
 _CARACTERES_INVALIDOS = re.compile(r'[<>:"/\\|?*\x00-\x1f]')
@@ -101,23 +107,46 @@ def _salvar(origem: BinaryIO, destino: Path, limite: int, campo: str, nome: str)
         raise ErroRequisicao(422, "ARQUIVO_VAZIO", "arquivo vazio", campo, nome)
 
 
+def _ambiente(ambiente: str | None) -> str:
+    valor = (ambiente or os.environ.get("EXTRACTOR_AMBIENTE") or "producao").strip().lower()
+    if valor not in AMBIENTES:
+        raise RuntimeError(f"EXTRACTOR_AMBIENTE inválido: {valor!r} (use {' ou '.join(AMBIENTES)})")
+    return valor
+
+
 def create_app(
     api_key: str | None = None,
     tamanho_maximo_mb: int | None = None,
+    ambiente: str | None = None,
 ) -> FastAPI:
+    """Monta a API. Parâmetros omitidos vêm das variáveis de ambiente.
+
+    Em produção (o padrão, para falhar fechado), sem chave o serviço não sobe.
+    """
+    producao = _ambiente(ambiente) == "producao"
     api_key = api_key if api_key is not None else os.environ.get("EXTRACTOR_API_KEY") or None
     if tamanho_maximo_mb is None:
         tamanho_maximo_mb = int(os.environ.get("EXTRACTOR_MAX_UPLOAD_MB", TAMANHO_MAXIMO_PADRAO_MB))
     limite_bytes = tamanho_maximo_mb * _BLOCO
     if not api_key:
+        if producao:
+            raise RuntimeError(
+                "EXTRACTOR_API_KEY não definida: obrigatória em produção. Defina a chave (a mesma "
+                "do java-backend) ou, só na máquina local, EXTRACTOR_AMBIENTE=desenvolvimento."
+            )
         logger.warning(
-            "EXTRACTOR_API_KEY não definida: autenticação desativada (use apenas em desenvolvimento local)"
+            "EXTRACTOR_API_KEY não definida: autenticação desativada (EXTRACTOR_AMBIENTE=desenvolvimento)"
         )
 
     app = FastAPI(
         title="HealthStaff Sync - Extractor",
         version=VERSAO_API,
         description="Extração de escalas (PDF/Excel) e Banco de Horas do Two (Excel/CSV).",
+        # Documentação interativa só em desenvolvimento: em produção não há por que
+        # expor o mapa da API (o contrato versionado está em schema/).
+        docs_url=None if producao else "/docs",
+        redoc_url=None if producao else "/redoc",
+        openapi_url=None if producao else "/openapi.json",
     )
 
     erros_documentados = {

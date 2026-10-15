@@ -217,7 +217,8 @@ Variáveis principais do `.env`:
 | --- | --- | --- |
 | `POSTGRES_PASSWORD` | (vazia, obrigatória) | Senha do banco |
 | `POSTGRES_USER` | `healthstaff` | Usuário do banco |
-| `EXTRACTOR_API_KEY` | (vazia) | Chave exigida no header `X-API-Key` do extrator; a mesma chave configura o Java. Vazia = sem autenticação (só local) |
+| `EXTRACTOR_AMBIENTE` | `producao` | `producao` ou `desenvolvimento`. Em produção o extrator não sobe sem `EXTRACTOR_API_KEY` e não expõe `/docs`, `/redoc` nem `/openapi.json` |
+| `EXTRACTOR_API_KEY` | (vazia, obrigatória em produção) | Chave exigida no header `X-API-Key` do extrator; a mesma chave configura o Java (`openssl rand -hex 32`). Vazia só com `EXTRACTOR_AMBIENTE=desenvolvimento` |
 | `EXTRACTOR_MAX_UPLOAD_MB` | `20` | Limite de upload, aplicado igualmente no Java, no extrator e no repasse do Next |
 | `EXTRACTOR_MAX_DESCOMPACTADO_MB` / `EXTRACTOR_MAX_ENTRADAS_ZIP` / `EXTRACTOR_MAX_PAGINAS_PDF` | `200` / `1000` / `200` | Limites de conteúdo por arquivo no extrator: `.xlsx` descompactado (zip bomb), entradas internas do `.xlsx` e páginas de PDF. Acima disso, 413 `ARQUIVO_MUITO_GRANDE` com o motivo |
 | `EXTRACTOR_URL` | `http://localhost:8000` | Onde o Java encontra o extrator |
@@ -259,7 +260,7 @@ npm run dev
 | --- | --- |
 | Frontend | <http://localhost:3000> |
 | API Java | <http://localhost:8080> (`/api/v1/...`; saúde em `/actuator/health`, detalhada só com token de `ADMIN`) |
-| Extrator Python | <http://localhost:8000> (documentação interativa em `/docs`) |
+| Extrator Python | <http://localhost:8000> (documentação interativa em `/docs` só com `EXTRACTOR_AMBIENTE=desenvolvimento`) |
 
 Healthcheck de container (Docker, Kubernetes): use `/actuator/health/liveness`, que não chama o extrator. Com o extrator fora do ar, `/actuator/health` responde 503 a qualquer um.
 

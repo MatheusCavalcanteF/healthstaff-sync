@@ -100,7 +100,7 @@ def test_registry_recusa_antes_de_tentar_os_extratores(tmp_path, monkeypatch):
 
 def test_api_responde_413_com_o_motivo(monkeypatch):
     monkeypatch.setattr(limites, "MAX_DESCOMPACTADO_MB", 1)
-    cliente = TestClient(create_app(api_key="", tamanho_maximo_mb=1))
+    cliente = TestClient(create_app(api_key="", tamanho_maximo_mb=1, ambiente="desenvolvimento"))
 
     resposta = cliente.post("/extracoes", files={"escala": ("escala.xlsx", bomba(3), XLSX)})
 

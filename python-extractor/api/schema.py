@@ -36,7 +36,7 @@ def openapi_formatado() -> str:
     from .app import create_app  # import tardio: app importa este módulo
 
     # Sem chave e com limite fixo: o documento não depende do ambiente.
-    documento = create_app(api_key="", tamanho_maximo_mb=20).openapi()
+    documento = create_app(api_key="", tamanho_maximo_mb=20, ambiente="desenvolvimento").openapi()
     return json.dumps(documento, indent=2, ensure_ascii=False) + "\n"
 
 

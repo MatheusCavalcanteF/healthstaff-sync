@@ -18,7 +18,9 @@ services:
     image: healthstaff/extractor:local
     container_name: healthstaff-extractor
     environment:
-      # Vazio = sem autenticação (apenas desenvolvimento local).
+      # Produção é o padrão: sem EXTRACTOR_API_KEY o extrator não sobe. Para subir
+      # sem chave na máquina local, EXTRACTOR_AMBIENTE=desenvolvimento no .env.
+      EXTRACTOR_AMBIENTE: ${EXTRACTOR_AMBIENTE:-producao}
       EXTRACTOR_API_KEY: ${EXTRACTOR_API_KEY:-}
       EXTRACTOR_MAX_UPLOAD_MB: ${EXTRACTOR_MAX_UPLOAD_MB:-20}
       # Limites de conteúdo por arquivo (zip bomb em .xlsx, PDF com páginas demais).

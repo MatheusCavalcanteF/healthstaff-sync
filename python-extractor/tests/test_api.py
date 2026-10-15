@@ -25,7 +25,7 @@ XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 @pytest.fixture
 def cliente() -> TestClient:
-    return TestClient(create_app(api_key="", tamanho_maximo_mb=1))
+    return TestClient(create_app(api_key="", tamanho_maximo_mb=1, ambiente="desenvolvimento"))
 
 
 @pytest.fixture
@@ -294,6 +294,7 @@ def test_exemplo_usado_pelo_java_backend_segue_o_contrato():
 
 
 def test_avisa_quando_sobe_sem_autenticacao(monkeypatch, caplog):
+    monkeypatch.setenv("EXTRACTOR_AMBIENTE", "desenvolvimento")
     monkeypatch.delenv("EXTRACTOR_API_KEY", raising=False)
     with caplog.at_level("WARNING", logger="api.app"):
         create_app()
@@ -310,13 +311,60 @@ def test_main_aplica_a_chave_do_ambiente(monkeypatch):
     """O app servido pelo uvicorn (main:app) precisa respeitar EXTRACTOR_API_KEY."""
     import importlib
 
+    # Antes do import: main.py cria o app ao ser importado, e sem chave não sobe.
+    monkeypatch.setenv("EXTRACTOR_API_KEY", "do-ambiente")
     import main
 
-    monkeypatch.setenv("EXTRACTOR_API_KEY", "do-ambiente")
     cliente = TestClient(importlib.reload(main).app)
     assert cliente.get("/schema").status_code == 401
     assert cliente.get("/schema", headers={"X-API-Key": "errada"}).status_code == 401
     assert cliente.get("/schema", headers={"X-API-Key": "do-ambiente"}).status_code == 200
+
+
+class TestAmbiente:
+    """Produção é o padrão (falha fechada): sem chave não sobe e a documentação
+    interativa some. Só EXTRACTOR_AMBIENTE=desenvolvimento libera os dois."""
+
+    @pytest.fixture(autouse=True)
+    def ambiente_limpo(self, monkeypatch):
+        monkeypatch.delenv("EXTRACTOR_AMBIENTE", raising=False)
+        monkeypatch.delenv("EXTRACTOR_API_KEY", raising=False)
+
+    def test_producao_sem_chave_nao_sobe(self):
+        with pytest.raises(RuntimeError, match="obrigatória em produção"):
+            create_app()
+
+    def test_producao_sem_chave_nao_sobe_nem_por_parametro(self):
+        with pytest.raises(RuntimeError, match="obrigatória em produção"):
+            create_app(api_key="", ambiente="producao")
+
+    def test_desenvolvimento_sem_chave_sobe(self, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_AMBIENTE", "desenvolvimento")
+        assert TestClient(create_app()).get("/health").status_code == 200
+
+    @pytest.mark.parametrize("caminho", ["/docs", "/redoc", "/openapi.json"])
+    def test_producao_sem_documentacao_interativa(self, caminho, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_API_KEY", "segredo")
+        cliente = TestClient(create_app())
+
+        assert cliente.get(caminho).status_code == 404
+        assert cliente.get("/health").status_code == 200
+
+    @pytest.mark.parametrize("caminho", ["/docs", "/redoc", "/openapi.json"])
+    def test_desenvolvimento_com_documentacao_interativa(self, caminho):
+        cliente = TestClient(create_app(api_key="segredo", ambiente="desenvolvimento"))
+        assert cliente.get(caminho).status_code == 200
+
+    def test_ambiente_invalido_nao_sobe(self, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_AMBIENTE", "homologacao")
+        with pytest.raises(RuntimeError, match="EXTRACTOR_AMBIENTE inválido"):
+            create_app(api_key="segredo")
+
+    def test_contrato_gerado_nao_depende_do_ambiente(self):
+        """python -m api.schema gera o openapi.json em desenvolvimento; o documento é o mesmo."""
+        producao = create_app(api_key="segredo", ambiente="producao").openapi()
+        desenvolvimento = create_app(api_key="segredo", ambiente="desenvolvimento").openapi()
+        assert producao == desenvolvimento
 
 
 class TestCadastroDoBackend:

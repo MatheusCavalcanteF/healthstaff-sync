@@ -29,13 +29,13 @@
   - `GET /schema`: JSON Schema da resposta. Versionado em `python-extractor/schema/resultado-extracao.schema.json` (regenerar com `python -m api.schema`).
   - `GET /health`.
 - **Erros:** formato único `ErroApi` (`codigo`, `mensagem`, `campo`, `arquivo`); falha em um arquivo derruba a requisição inteira (sem lote parcial).
-- **Configuração do extrator:** `EXTRACTOR_API_KEY` (exige `X-API-Key`), `EXTRACTOR_MAX_UPLOAD_MB` (padrão 20).
+- **Configuração do extrator:** `EXTRACTOR_AMBIENTE` (`producao`, o padrão, ou `desenvolvimento`), `EXTRACTOR_API_KEY` (exige `X-API-Key`), `EXTRACTOR_MAX_UPLOAD_MB` (padrão 20). **Em produção, sem chave o extrator não sobe** (falha fechada: o padrão é produção) e `/docs`, `/redoc` e `/openapi.json` ficam desligados. `create_app(ambiente=...)` sobrepõe a variável: testes e `python -m api.schema` usam `desenvolvimento` (o documento OpenAPI gerado é o mesmo nos dois ambientes).
 - **Limites de conteúdo** (`utils/limites.py`): conferidos no `ExtractorRegistry.selecionar()` **antes** do laço que tenta os extratores (lá dentro, qualquer exceção vira "layout não reconhecido"). `.xlsx`/`.xlsm`: soma do tamanho descompactado declarado (`EXTRACTOR_MAX_DESCOMPACTADO_MB`, 200; basta o declarado porque o `zipfile` nunca descompacta além dele) e número de entradas (`EXTRACTOR_MAX_ENTRADAS_ZIP`, 1000). PDF: páginas contadas percorrendo a árvore, sem confiar no `/Count` (`EXTRACTOR_MAX_PAGINAS_PDF`, 200). Acima do limite: 413 `ARQUIVO_MUITO_GRANDE` com o motivo; arquivo corrompido passa e a extração dá o erro certo.
 
 ## Desenvolvimento (python-extractor)
 - Dependências: `requirements.txt` = produção (vai para a imagem Docker); `requirements-dev.txt` = produção + pytest/httpx2/pandas. Instalar com `pip install -r requirements-dev.txt`.
 - Testes: `venv\Scripts\python -m pytest` (a partir de `python-extractor/`).
-- API local: `uvicorn main:app --reload` -> docs em `http://127.0.0.1:8000/docs`.
+- API local: `uvicorn main:app --reload` com `EXTRACTOR_AMBIENTE=desenvolvimento` (ou uma `EXTRACTOR_API_KEY`) -> docs em `http://127.0.0.1:8000/docs` (só em desenvolvimento).
 - Docker (na raiz): `docker compose up --build -d`; o extrator fica em `http://127.0.0.1:8000`. O `.dockerignore` é lista de permissão: arquivo novo que precise ir para a imagem tem de ser liberado explicitamente nele e copiado no `Dockerfile`.
 
 ## Desenvolvimento (java-backend)
