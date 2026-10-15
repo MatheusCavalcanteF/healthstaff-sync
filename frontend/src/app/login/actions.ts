@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { autenticar, encerrarSessaoNoBackend } from "@/lib/api/endpoints";
 import { destinoSeguro } from "@/lib/auth";
-import { formatarEspera, ipDoCliente, limiteLoginPorIp } from "@/lib/limite-login";
+import { chaveDeIp, formatarEspera, limiteLoginPorIp } from "@/lib/limite-login";
 import { encerrarSessao, gravarSessao } from "@/lib/sessao";
 
 export interface EstadoLogin {
@@ -22,9 +22,10 @@ export async function entrar(_anterior: EstadoLogin, formulario: FormData): Prom
     return { erro: "Informe o e-mail e a senha.", email };
   }
 
-  // Reservada antes de chamar o backend; só fica contada se a tentativa errar.
-  const ip = await ipDoCliente();
-  const reserva = limiteLoginPorIp.reservar(ip);
+  // Só com proxy confiável configurado (sem IP confiável, vale apenas o limite por
+  // e-mail do backend). Reservada antes de chamar o backend; fica contada só se errar.
+  const ip = await chaveDeIp();
+  const reserva = ip ? limiteLoginPorIp.reservar(ip) : { permitida: true, esperaSegundos: 0 };
   if (!reserva.permitida) {
     return {
       erro: `Muitas tentativas de login a partir desta rede. Tente de novo em ${formatarEspera(reserva.esperaSegundos)}.`,
@@ -35,7 +36,7 @@ export async function entrar(_anterior: EstadoLogin, formulario: FormData): Prom
   try {
     const { token, expiraEm } = await autenticar(email, senha);
     await gravarSessao(token, expiraEm);
-    limiteLoginPorIp.devolver(ip);
+    if (ip) limiteLoginPorIp.devolver(ip);
   } catch (erro) {
     if (erro instanceof ApiError && erro.codigo === "CREDENCIAIS_INVALIDAS") {
       return { erro: "E-mail ou senha inválidos.", email };
@@ -48,7 +49,7 @@ export async function entrar(_anterior: EstadoLogin, formulario: FormData): Prom
       };
     }
     // Demais falhas não são palpite de senha: não contam contra a rede.
-    limiteLoginPorIp.devolver(ip);
+    if (ip) limiteLoginPorIp.devolver(ip);
     if (!(erro instanceof ApiError)) {
       throw erro;
     }

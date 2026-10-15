@@ -2,6 +2,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 
+import { cabecalhoIpConfigurado, ipDoCliente } from "@/lib/ip-cliente";
 import { LimiteTentativas } from "@/lib/limite-tentativas";
 
 /**
@@ -10,17 +11,16 @@ import { LimiteTentativas } from "@/lib/limite-tentativas";
  */
 export const limiteLoginPorIp = new LimiteTentativas(20, 15 * 60_000);
 
-/**
- * IP de quem chama, como o proxy reverso informou: o `X-Real-IP` ou o último
- * endereço do `X-Forwarded-For` (o que o proxy acrescentou). Sem proxy na
- * frente, o cliente pode forjar esses cabeçalhos e contornar este limite; o
- * limite por e-mail do backend continua valendo.
- */
-export async function ipDoCliente(): Promise<string> {
+/** Cabeçalho que o proxy reverso confiável define (`HEALTHSTAFF_CABECALHO_IP`); vazio = limite por IP desligado. */
+const CABECALHO_IP = cabecalhoIpConfigurado(process.env.HEALTHSTAFF_CABECALHO_IP);
+
+/** IP de quem chama, ou `null` quando o limite por IP não se aplica (ver `lib/ip-cliente.ts`). */
+export async function chaveDeIp(): Promise<string | null> {
+  if (!CABECALHO_IP) {
+    return null;
+  }
   const cabecalhos = await headers();
-  const real = cabecalhos.get("x-real-ip")?.trim();
-  const encaminhado = cabecalhos.get("x-forwarded-for")?.split(",").at(-1)?.trim();
-  return real || encaminhado || "desconhecido";
+  return ipDoCliente(CABECALHO_IP, (nome) => cabecalhos.get(nome));
 }
 
 /** "45 s" ou "3 min" (arredondado para cima). */
