@@ -277,6 +277,7 @@ Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | `POST` | `/auth/login` | `{"email", "senha"}` → token JWT, validade (`expiraEm`) e dados do usuário. Após 5 tentativas sem acerto para o mesmo e-mail, 429 `MUITAS_TENTATIVAS` com `Retry-After` (bloqueio de 1 min que dobra a cada erro, até 15 min) |
+| `POST` | `/auth/sair` | Logout: 204 e o token deixa de valer na hora (junto com as demais sessões do usuário) |
 | `GET` | `/auth/eu` | Usuário do token |
 | `GET` | `/usuarios` | Usuários (só `ADMIN`), ativos e inativos |
 | `POST` | `/usuarios` | Cadastra (`nome`, `email`, `senha`, `perfil`); 409 `EMAIL_JA_CADASTRADO` se o e-mail existir |

@@ -257,6 +257,66 @@ class SegurancaTest extends IntegracaoComBanco {
 	}
 
 	@Nested
+	class Logout {
+
+		@ParameterizedTest
+		@EnumSource(Perfil.class)
+		void qualquerPerfilSaiEOTokenDeixaDeValerNaHora(Perfil perfil) throws Exception {
+			var autorizacao = bearer(usuario(perfil));
+			mvc.perform(get("/api/v1/auth/eu").header(HttpHeaders.AUTHORIZATION, autorizacao))
+					.andExpect(status().isOk());
+
+			mvc.perform(post("/api/v1/auth/sair").header(HttpHeaders.AUTHORIZATION, autorizacao))
+					.andExpect(status().isNoContent());
+
+			mvc.perform(get("/api/v1/auth/eu").header(HttpHeaders.AUTHORIZATION, autorizacao))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.codigo").value("NAO_AUTENTICADO"));
+		}
+
+		@Test
+		void sairDerrubaTambemAsOutrasSessoesDoUsuario() throws Exception {
+			var gestor = usuario(Perfil.GESTOR_RH);
+			var outroNavegador = bearer(gestor);
+			var esteNavegador = bearer(gestor);
+
+			mvc.perform(post("/api/v1/auth/sair").header(HttpHeaders.AUTHORIZATION, esteNavegador))
+					.andExpect(status().isNoContent());
+
+			mvc.perform(get("/api/v1/colaboradores").header(HttpHeaders.AUTHORIZATION, outroNavegador))
+					.andExpect(status().isUnauthorized());
+		}
+
+		@Test
+		void novoLoginDepoisDoLogoutFunciona() throws Exception {
+			usuario(Perfil.AUDITOR);
+			var antes = "Bearer " + tokenDoLogin("auditor@teste.local");
+			mvc.perform(post("/api/v1/auth/sair").header(HttpHeaders.AUTHORIZATION, antes))
+					.andExpect(status().isNoContent());
+
+			var depois = "Bearer " + tokenDoLogin("auditor@teste.local");
+			mvc.perform(get("/api/v1/auth/eu").header(HttpHeaders.AUTHORIZATION, depois))
+					.andExpect(status().isOk());
+			mvc.perform(get("/api/v1/auth/eu").header(HttpHeaders.AUTHORIZATION, antes))
+					.andExpect(status().isUnauthorized());
+		}
+
+		@Test
+		void semTokenRecebe401() throws Exception {
+			mvc.perform(post("/api/v1/auth/sair"))
+					.andExpect(status().isUnauthorized())
+					.andExpect(jsonPath("$.codigo").value("NAO_AUTENTICADO"));
+		}
+
+		String tokenDoLogin(String email) throws Exception {
+			var corpo = mvc.perform(login(email, UsuariosDeTeste.SENHA))
+					.andExpect(status().isOk())
+					.andReturn().getResponse().getContentAsString();
+			return corpo.replaceAll(".*\"token\":\"([^\"]+)\".*", "$1");
+		}
+	}
+
+	@Nested
 	class Perfis {
 
 		@ParameterizedTest

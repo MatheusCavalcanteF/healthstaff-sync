@@ -26,6 +26,12 @@ export async function autenticar(email: string, senha: string): Promise<TokenRes
   return data;
 }
 
+/** Revoga no backend o token da sessão (e os demais do usuário) na hora. */
+export async function encerrarSessaoNoBackend(): Promise<void> {
+  // Prazo curto: o logout não pode ficar preso nos 130 s pensados para importações.
+  await api.post("/auth/sair", undefined, { timeout: 5_000 });
+}
+
 /** Só ADMIN (os demais recebem 403 ACESSO_NEGADO). */
 export async function listarUsuarios(): Promise<Usuario[]> {
   const { data } = await api.get<Usuario[]>("/usuarios");

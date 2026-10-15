@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 
 import { ApiError } from "@/lib/api/client";
-import { autenticar } from "@/lib/api/endpoints";
+import { autenticar, encerrarSessaoNoBackend } from "@/lib/api/endpoints";
 import { destinoSeguro } from "@/lib/auth";
 import { formatarEspera, ipDoCliente, limiteLoginPorIp } from "@/lib/limite-login";
 import { encerrarSessao, gravarSessao } from "@/lib/sessao";
@@ -62,6 +62,13 @@ export async function entrar(_anterior: EstadoLogin, formulario: FormData): Prom
 }
 
 export async function sair(): Promise<void> {
+  try {
+    // Revoga o token no servidor: mesmo copiado antes, ele deixa de valer agora.
+    await encerrarSessaoNoBackend();
+  } catch {
+    // Token já vencido ou revogado (o 401 vira redirecionamento no apiServidor) ou
+    // backend fora do ar: o cookie sai de qualquer jeito.
+  }
   await encerrarSessao();
   redirect("/login");
 }

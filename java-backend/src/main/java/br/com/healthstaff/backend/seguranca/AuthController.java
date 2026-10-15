@@ -2,6 +2,7 @@ package br.com.healthstaff.backend.seguranca;
 
 import jakarta.validation.Valid;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -10,9 +11,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Login (emite o JWT) e dados do usuário logado. */
+/** Login (emite o JWT), logout (revoga) e dados do usuário logado. */
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController {
@@ -20,11 +22,14 @@ class AuthController {
 	private final AuthenticationManager autenticacao;
 	private final TokenService tokens;
 	private final LimiteTentativasLogin limite;
+	private final UsuarioService usuarios;
 
-	AuthController(AuthenticationManager autenticacao, TokenService tokens, LimiteTentativasLogin limite) {
+	AuthController(AuthenticationManager autenticacao, TokenService tokens, LimiteTentativasLogin limite,
+			UsuarioService usuarios) {
 		this.autenticacao = autenticacao;
 		this.tokens = tokens;
 		this.limite = limite;
+		this.usuarios = usuarios;
 	}
 
 	@PostMapping("/login")
@@ -43,6 +48,16 @@ class AuthController {
 		catch (AuthenticationException e) {
 			throw new CredenciaisInvalidasException();
 		}
+	}
+
+	/**
+	 * Logout que vale no servidor: incrementa a versão das credenciais, e o token
+	 * (com os demais do usuário) deixa de valer na hora, sem esperar a expiração.
+	 */
+	@PostMapping("/sair")
+	@ResponseStatus(HttpStatus.NO_CONTENT)
+	void sair(@AuthenticationPrincipal Usuario usuario) {
+		usuarios.encerrarSessoes(usuario.getId());
 	}
 
 	@GetMapping("/eu")

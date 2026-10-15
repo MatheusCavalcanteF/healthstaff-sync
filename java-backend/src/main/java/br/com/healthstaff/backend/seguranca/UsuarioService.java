@@ -46,6 +46,15 @@ public class UsuarioService {
 		return UsuarioResponse.de(usuario(id));
 	}
 
+	/**
+	 * Logout: revoga na hora o token usado e os demais do usuário (outros
+	 * navegadores), que compartilham a mesma versão das credenciais.
+	 */
+	@Transactional
+	public void encerrarSessoes(UUID id) {
+		usuarios.incrementarVersaoCredenciais(id);
+	}
+
 	@Transactional
 	public UsuarioResponse criar(NovoUsuarioRequest dados) {
 		exigirSenhaValida(dados.senha());

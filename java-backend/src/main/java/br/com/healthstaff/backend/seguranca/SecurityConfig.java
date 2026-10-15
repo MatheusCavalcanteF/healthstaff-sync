@@ -32,7 +32,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * token, só o status geral; componentes e detalhes só para ADMIN, ver
  * {@code management.endpoint.health} no {@code application.yml}).</li>
  * <li>{@code /api/v1/usuarios/**} (gestão de usuários, qualquer método): só ADMIN.</li>
- * <li>{@code GET /api/v1/**}: qualquer usuário autenticado.</li>
+ * <li>{@code GET /api/v1/**} e {@code POST /api/v1/auth/sair} (logout): qualquer
+ * usuário autenticado.</li>
  * <li>Demais métodos em {@code /api/v1/**} (importações, reprocessar análise):
  * só ADMIN e GESTOR_RH. Endpoint de escrita novo já nasce protegido.</li>
  * <li>Qualquer outra rota: negada.</li>
@@ -65,6 +66,7 @@ class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
 						.requestMatchers("/api/v1/usuarios", "/api/v1/usuarios/**").hasRole(Perfil.ADMIN.name())
 						.requestMatchers(HttpMethod.GET, "/api/v1/**").authenticated()
+						.requestMatchers(HttpMethod.POST, "/api/v1/auth/sair").authenticated()
 						.requestMatchers("/api/v1/**").hasAnyRole(Perfil.ADMIN.name(), Perfil.GESTOR_RH.name())
 						.anyRequest().denyAll())
 				.oauth2ResourceServer(recurso -> recurso

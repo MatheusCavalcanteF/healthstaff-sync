@@ -8,6 +8,7 @@ import jakarta.persistence.LockModeType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
@@ -27,4 +28,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 	@Lock(LockModeType.PESSIMISTIC_WRITE)
 	@Query("select u from Usuario u where u.perfil = br.com.healthstaff.backend.seguranca.Perfil.ADMIN and u.ativo = true")
 	List<Usuario> travarAdminsAtivos();
+
+	/**
+	 * Invalida todos os tokens já emitidos para o usuário (a claim {@code ver} deixa
+	 * de bater). Incremento no próprio banco: não perde a soma se outra alteração
+	 * do mesmo usuário acontecer ao mesmo tempo.
+	 */
+	@Modifying
+	@Query("update Usuario u set u.versaoCredenciais = u.versaoCredenciais + 1 where u.id = :id")
+	int incrementarVersaoCredenciais(UUID id);
 }
