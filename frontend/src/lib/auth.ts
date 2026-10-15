@@ -1,3 +1,4 @@
+import { COOKIE_SESSAO_ATUAL } from "@/lib/cookie-sessao";
 import type { Perfil } from "@/types/api";
 
 /** Quem está logado, para a interface (nome no menu, esconder ações do perfil). */
@@ -7,8 +8,8 @@ export interface UsuarioSessao {
   perfil: Perfil;
 }
 
-/** Cookie httpOnly com o JWT do backend (lido só no servidor do Next). */
-export const COOKIE_SESSAO = "hs_sessao";
+/** Cookie httpOnly com o JWT do backend (lido só no servidor do Next); `__Host-` em produção. */
+export const COOKIE_SESSAO = COOKIE_SESSAO_ATUAL.nome;
 
 export const PERFIS: Perfil[] = ["ADMIN", "GESTOR_RH", "AUDITOR"];
 

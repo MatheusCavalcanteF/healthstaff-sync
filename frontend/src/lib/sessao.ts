@@ -3,6 +3,7 @@ import "server-only";
 import { cookies } from "next/headers";
 
 import { COOKIE_SESSAO, PERFIS, type UsuarioSessao } from "@/lib/auth";
+import { COOKIE_SESSAO_ATUAL } from "@/lib/cookie-sessao";
 import type { Perfil } from "@/types/api";
 
 export async function lerToken(): Promise<string | undefined> {
@@ -45,14 +46,15 @@ export async function lerUsuarioSessao(): Promise<UsuarioSessao | null> {
 /** Só em Server Actions ou Route Handlers (o Next não grava cookie durante a renderização). */
 export async function gravarSessao(token: string, expiraEm: string): Promise<void> {
   (await cookies()).set(COOKIE_SESSAO, token, {
-    httpOnly: true, // o JavaScript da página nunca vê o token (XSS não o rouba)
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax", // outro site não consegue disparar POST com o cookie
-    path: "/",
+    ...COOKIE_SESSAO_ATUAL.atributos, // httpOnly, SameSite=Lax, Path=/; Secure em produção
     expires: new Date(expiraEm), // some junto com a validade do token
   });
 }
 
+/**
+ * Apaga com os mesmos atributos da gravação: o navegador recusa mexer num
+ * cookie `__Host-` (inclusive para apagar) sem Secure e Path=/.
+ */
 export async function encerrarSessao(): Promise<void> {
-  (await cookies()).delete(COOKIE_SESSAO);
+  (await cookies()).set(COOKIE_SESSAO, "", { ...COOKIE_SESSAO_ATUAL.atributos, maxAge: 0 });
 }
