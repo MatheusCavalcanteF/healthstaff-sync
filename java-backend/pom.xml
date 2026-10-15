@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>25</java.version>
-		<openapi-generator.version>7.25.0</openapi-generator.version>
+		<openapi-generator.version>7.26.0</openapi-generator.version>
 		<!-- Base para @{argLine} do surefire (ferramentas como JaCoCo acrescentam aqui). -->
 		<argLine></argLine>
 		<!-- Mesma versão do Postgres de produção (docker-compose: postgres:18). -->
