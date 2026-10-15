@@ -96,3 +96,4 @@
 ## Dados sensíveis (LGPD)
 - Escalas, relatórios do Two e espelhos de ponto contêm nomes, matrículas, COREN e CPF. Nunca versionar arquivos reais (bloqueados no `.gitignore`) nem copiar valores reais para código ou testes; usar dados fictícios.
 - `tests/test_arquivos_reais.py` valida só invariantes e é pulado quando os arquivos reais não estão presentes.
+- Logs não gravam dados pessoais inteiros: e-mail sai mascarado (`Usuario.mascararEmail`, ex.: `a***@hospital.local`); o bloqueio de login registra só a duração e o número de tentativas.

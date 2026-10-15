@@ -12,10 +12,16 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+@ExtendWith(OutputCaptureExtension.class)
 class CriacaoAdminInicialTest {
 
 	final UsuarioRepository usuarios = mock(UsuarioRepository.class);
@@ -83,5 +89,41 @@ class CriacaoAdminInicialTest {
 
 		verify(usuarios, never()).save(any());
 		assertThat(existente.getPerfil()).isEqualTo(Perfil.AUDITOR);
+	}
+
+	@Test
+	void logDaCriacaoNaoGravaOEmailInteiro(CapturedOutput saida) {
+		when(usuarios.findByEmail("admin@hospital.local")).thenReturn(Optional.empty());
+
+		criacao("Admin@Hospital.local", "senha-forte-123").run(null);
+
+		assertThat(saida).contains("administrador inicial criado: a***@hospital.local")
+				.doesNotContain("admin@hospital.local");
+	}
+
+	@Test
+	void logDeContaExistenteNaoGravaOEmailInteiro(CapturedOutput saida) {
+		var existente = Usuario.novo("Auditor", "admin@hospital.local", "hash", Perfil.AUDITOR);
+		when(usuarios.findByEmail("admin@hospital.local")).thenReturn(Optional.of(existente));
+
+		criacao("admin@hospital.local", "senha-forte-123").run(null);
+
+		assertThat(saida).contains("a***@hospital.local já existe").doesNotContain("admin@hospital.local");
+	}
+
+	@ParameterizedTest(name = "{0} -> {1}")
+	@CsvSource({
+			"admin@hospital.local, a***@hospital.local",
+			"' Maria.Silva@Hospital.LOCAL ', m***@hospital.local",
+			"x@h.io, x***@h.io",
+			"sem-arroba, ***",
+			"@hospital.local, ***" })
+	void mascaraDeEmail(String email, String esperado) {
+		assertThat(Usuario.mascararEmail(email)).isEqualTo(esperado);
+	}
+
+	@Test
+	void mascaraDeEmailNulo() {
+		assertThat(Usuario.mascararEmail(null)).isEqualTo("***");
 	}
 }

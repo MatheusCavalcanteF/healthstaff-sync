@@ -72,6 +72,22 @@ public class Usuario implements UserDetails {
 		return email.strip().toLowerCase(Locale.ROOT);
 	}
 
+	/**
+	 * Para logs (LGPD): só a primeira letra e o domínio, como {@code a***@hospital.local}.
+	 * Dá para reconhecer a conta sem gravar o endereço inteiro.
+	 */
+	public static String mascararEmail(String email) {
+		if (email == null) {
+			return "***";
+		}
+		var normalizado = normalizarEmail(email);
+		var arroba = normalizado.indexOf('@');
+		if (arroba < 1) {
+			return "***";
+		}
+		return normalizado.charAt(0) + "***" + normalizado.substring(arroba);
+	}
+
 	/** Nome, e-mail e perfil; mudar e-mail ou perfil derruba as sessões abertas. */
 	public void atualizar(String nome, String email, Perfil perfil) {
 		var novoEmail = normalizarEmail(email);

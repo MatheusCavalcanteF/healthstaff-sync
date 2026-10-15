@@ -52,10 +52,10 @@ class CriacaoAdminInicial implements ApplicationRunner {
 		if (usuarios.findByEmail(email).isPresent()) {
 			// Conta existente inativa ou com outro perfil: decisão de quem administra, não da subida.
 			log.warn("nenhum administrador ativo, mas {} já existe com outro perfil ou inativo; nada foi alterado",
-					email);
+					Usuario.mascararEmail(email));
 			return;
 		}
 		usuarios.save(Usuario.novo(admin.nome(), email, senhas.encode(senha), Perfil.ADMIN));
-		log.info("administrador inicial criado: {}", email);
+		log.info("administrador inicial criado: {}", Usuario.mascararEmail(email));
 	}
 }
