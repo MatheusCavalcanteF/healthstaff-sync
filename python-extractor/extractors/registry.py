@@ -6,6 +6,7 @@ from datetime import date
 from pathlib import Path
 
 from models import LoteImportacao
+from utils.limites import verificar_limites
 from utils.matcher import ColaboradorMatcher
 
 from .base import BaseExtractor, ErroExtracao
@@ -74,11 +75,14 @@ class ExtractorRegistry:
         Só são consultados extratores que aceitam a extensão do arquivo.
         Um extrator que lança exceção ao abrir o arquivo ou em
         ``pode_processar`` é tratado como incapaz de processá-lo, para não
-        bloquear os demais.
+        bloquear os demais. Por isso os limites de conteúdo (zip bomb, páginas
+        de PDF) são conferidos antes, fora desse tratamento: lançam
+        ``ArquivoForaDosLimites`` em vez de virar "layout não reconhecido".
         """
         caminho = Path(caminho)
         if not caminho.is_file():
             raise FileNotFoundError(caminho)
+        verificar_limites(caminho)
 
         for extrator in self._extratores.values():
             if not extrator.aceita_extensao(caminho):

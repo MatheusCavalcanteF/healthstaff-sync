@@ -218,7 +218,8 @@ Variáveis principais do `.env`:
 | `POSTGRES_PASSWORD` | (vazia, obrigatória) | Senha do banco |
 | `POSTGRES_USER` | `healthstaff` | Usuário do banco |
 | `EXTRACTOR_API_KEY` | (vazia) | Chave exigida no header `X-API-Key` do extrator; a mesma chave configura o Java. Vazia = sem autenticação (só local) |
-| `EXTRACTOR_MAX_UPLOAD_MB` | `20` | Limite de upload, aplicado igualmente no Java e no extrator |
+| `EXTRACTOR_MAX_UPLOAD_MB` | `20` | Limite de upload, aplicado igualmente no Java, no extrator e no repasse do Next |
+| `EXTRACTOR_MAX_DESCOMPACTADO_MB` / `EXTRACTOR_MAX_ENTRADAS_ZIP` / `EXTRACTOR_MAX_PAGINAS_PDF` | `200` / `1000` / `200` | Limites de conteúdo por arquivo no extrator: `.xlsx` descompactado (zip bomb), entradas internas do `.xlsx` e páginas de PDF. Acima disso, 413 `ARQUIVO_MUITO_GRANDE` com o motivo |
 | `EXTRACTOR_URL` | `http://localhost:8000` | Onde o Java encontra o extrator |
 | `DATABASE_URL` | `jdbc:postgresql://localhost:5432/healthstaff` | Onde o Java encontra o banco |
 | `CORS_ORIGENS` | `http://localhost:3000` | Origens liberadas no backend (separadas por vírgula; nunca `*`) |

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 
 import { API_URL } from "@/lib/api/client";
+import { recusaDoRepasse, temCorpo } from "@/lib/regras-repasse";
 import { lerToken } from "@/lib/sessao";
 
 /**
@@ -10,6 +11,9 @@ import { lerToken } from "@/lib/sessao";
  */
 
 const CABECALHOS_DA_REQUISICAO = ["accept", "content-type"];
+
+/** Mesmo limite do backend e do extrator (`EXTRACTOR_MAX_UPLOAD_MB`, padrão 20). */
+const LIMITE_BYTES = Number(process.env.EXTRACTOR_MAX_UPLOAD_MB ?? "20") * 1024 * 1024;
 const CABECALHOS_DA_RESPOSTA = ["content-type", "www-authenticate"];
 
 function problema(status: number, codigo: string, detail: string): Response {
@@ -20,15 +24,21 @@ function problema(status: number, codigo: string, detail: string): Response {
 }
 
 async function repassar(requisicao: NextRequest, ctx: RouteContext<"/api/backend/[...caminho]">) {
-  // Defesa extra além do SameSite=Lax do cookie: nada de chamada disparada por outro site.
-  if (requisicao.headers.get("sec-fetch-site") === "cross-site") {
-    return problema(403, "ACESSO_NEGADO", "requisição de outra origem");
-  }
-
   const { caminho } = await ctx.params;
-  // "..", "%2F" etc. sairiam de /api/v1 (ex.: /api/backend/../actuator/env).
-  if (caminho.some((parte) => parte === "." || parte === ".." || /[/\\]/.test(parte))) {
-    return problema(400, "PARAMETRO_INVALIDO", "caminho inválido");
+  const token = await lerToken();
+  // Tudo decidido pelos cabeçalhos: o corpo só é lido (e bufferizado) depois.
+  const recusa = recusaDoRepasse(
+    {
+      metodo: requisicao.method,
+      secFetchSite: requisicao.headers.get("sec-fetch-site"),
+      caminho,
+      temSessao: Boolean(token),
+      contentLength: requisicao.headers.get("content-length"),
+    },
+    LIMITE_BYTES,
+  );
+  if (recusa) {
+    return problema(recusa.status, recusa.codigo, recusa.detail);
   }
   const destino = `${API_URL}/${caminho.map(encodeURIComponent).join("/")}${requisicao.nextUrl.search}`;
 
@@ -37,16 +47,15 @@ async function repassar(requisicao: NextRequest, ctx: RouteContext<"/api/backend
     const valor = requisicao.headers.get(nome);
     if (valor) cabecalhos.set(nome, valor);
   }
-  const token = await lerToken();
-  if (token) cabecalhos.set("authorization", `Bearer ${token}`);
+  cabecalhos.set("authorization", `Bearer ${token}`);
 
-  const comCorpo = requisicao.method !== "GET" && requisicao.method !== "HEAD";
+  const comCorpo = temCorpo(requisicao.method);
   let resposta: Response;
   try {
     resposta = await fetch(destino, {
       method: requisicao.method,
       headers: cabecalhos,
-      // Bufferizado (o backend limita a 20 MB): mais simples que repassar o stream.
+      // Bufferizado: mais simples que repassar o stream, e o tamanho já foi limitado acima.
       body: comCorpo ? await requisicao.arrayBuffer() : undefined,
       redirect: "manual",
       cache: "no-store",

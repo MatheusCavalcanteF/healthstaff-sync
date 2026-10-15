@@ -21,6 +21,10 @@ services:
       # Vazio = sem autenticação (apenas desenvolvimento local).
       EXTRACTOR_API_KEY: ${EXTRACTOR_API_KEY:-}
       EXTRACTOR_MAX_UPLOAD_MB: ${EXTRACTOR_MAX_UPLOAD_MB:-20}
+      # Limites de conteúdo por arquivo (zip bomb em .xlsx, PDF com páginas demais).
+      EXTRACTOR_MAX_DESCOMPACTADO_MB: ${EXTRACTOR_MAX_DESCOMPACTADO_MB:-200}
+      EXTRACTOR_MAX_ENTRADAS_ZIP: ${EXTRACTOR_MAX_ENTRADAS_ZIP:-1000}
+      EXTRACTOR_MAX_PAGINAS_PDF: ${EXTRACTOR_MAX_PAGINAS_PDF:-200}
     ports:
       # Publicado só em localhost: serviço interno, o Java é quem chama.
       - "127.0.0.1:${EXTRACTOR_PORTA_LOCAL:-8000}:8000"

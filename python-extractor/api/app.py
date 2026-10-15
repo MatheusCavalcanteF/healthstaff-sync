@@ -43,6 +43,7 @@ from models import (
     Severidade,
     TipoDocumento,
 )
+from utils.limites import ArquivoForaDosLimites
 from utils.matcher import CadastroColaborador, ColaboradorMatcher
 
 from .schema import gerar_schema
@@ -267,6 +268,8 @@ def create_app(
         registry = criar_registry_padrao(matcher=matcher, data_referencia_ponto=referencia)
         try:
             extrator = registry.selecionar(destino)
+        except ArquivoForaDosLimites as erro:
+            raise ErroRequisicao(413, "ARQUIVO_MUITO_GRANDE", str(erro), campo, nome) from None
         except ExtratorNaoEncontrado:
             raise ErroRequisicao(
                 422,
