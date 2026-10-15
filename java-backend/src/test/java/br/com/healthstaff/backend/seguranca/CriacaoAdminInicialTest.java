@@ -24,7 +24,8 @@ class CriacaoAdminInicialTest {
 	CriacaoAdminInicial criacao(String email, String senha) {
 		var propriedades = new SegurancaProperties(
 				new SegurancaProperties.Jwt(TokenServiceTest.SEGREDO, Duration.ofHours(8)),
-				new SegurancaProperties.AdminInicial("Administração", email, senha));
+				new SegurancaProperties.AdminInicial("Administração", email, senha),
+				new SegurancaProperties.Login(5, Duration.ofMinutes(1), Duration.ofMinutes(15), Duration.ofHours(1)));
 		return new CriacaoAdminInicial(usuarios, senhas, propriedades);
 	}
 

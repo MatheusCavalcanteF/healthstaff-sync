@@ -56,9 +56,13 @@ class SegurancaTest extends IntegracaoComBanco {
 	@Autowired
 	JdbcTemplate jdbc;
 
+	@Autowired
+	LimiteTentativasLogin limiteLogin;
+
 	@BeforeEach
 	void limpar() {
 		jdbc.update("delete from usuario");
+		limiteLogin.esquecerTudo();
 	}
 
 	Usuario usuario(Perfil perfil) {
@@ -133,6 +137,46 @@ class SegurancaTest extends IntegracaoComBanco {
 			mvc.perform(login("gestor_rh@teste.local", "x".repeat(100)))
 					.andExpect(status().isUnauthorized())
 					.andExpect(jsonPath("$.codigo").value("CREDENCIAIS_INVALIDAS"));
+		}
+
+		@Test
+		void depoisDeCincoTentativasSemAcertoAteASenhaCertaRecebe429ComRetryAfter() throws Exception {
+			usuario(Perfil.GESTOR_RH);
+			for (int i = 0; i < 5; i++) {
+				mvc.perform(login("gestor_rh@teste.local", "senha-errada-123")).andExpect(status().isUnauthorized());
+			}
+
+			mvc.perform(login("gestor_rh@teste.local", UsuariosDeTeste.SENHA))
+					.andExpect(status().isTooManyRequests())
+					.andExpect(resultado -> assertThat(
+							Long.parseLong(resultado.getResponse().getHeader(HttpHeaders.RETRY_AFTER))).isBetween(1L, 60L))
+					.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+					.andExpect(jsonPath("$.codigo").value("MUITAS_TENTATIVAS"))
+					.andExpect(jsonPath("$.tentarNovamenteEmSegundos").isNumber());
+		}
+
+		@Test
+		void emailSemContaEhBloqueadoDoMesmoJeito() throws Exception {
+			// Mesmo comportamento com ou sem conta: o bloqueio não revela quais e-mails existem.
+			for (int i = 0; i < 5; i++) {
+				mvc.perform(login("ninguem@teste.local", "senha-errada-123")).andExpect(status().isUnauthorized());
+			}
+			mvc.perform(login("ninguem@teste.local", "senha-errada-123"))
+					.andExpect(status().isTooManyRequests())
+					.andExpect(jsonPath("$.codigo").value("MUITAS_TENTATIVAS"));
+		}
+
+		@Test
+		void acertoAntesDoLimiteZeraAContagem() throws Exception {
+			usuario(Perfil.AUDITOR);
+			for (int i = 0; i < 4; i++) {
+				mvc.perform(login("auditor@teste.local", "senha-errada-123")).andExpect(status().isUnauthorized());
+			}
+			mvc.perform(login("auditor@teste.local", UsuariosDeTeste.SENHA)).andExpect(status().isOk());
+
+			for (int i = 0; i < 4; i++) {
+				mvc.perform(login("auditor@teste.local", "senha-errada-123")).andExpect(status().isUnauthorized());
+			}
 		}
 
 		@ParameterizedTest(name = "{0}")

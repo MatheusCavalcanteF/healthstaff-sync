@@ -38,6 +38,13 @@ healthstaff:
       # Gere com: openssl rand -base64 48
       secret: ${HEALTHSTAFF_JWT_SECRET:}
       expiracao: ${HEALTHSTAFF_JWT_EXPIRACAO:8h}   # um turno; depois, novo login
+    login:
+      # Freio contra força bruta, por e-mail: depois de N tentativas sem acerto, 429 com
+      # Retry-After; o bloqueio dobra a cada nova tentativa errada, até o máximo.
+      tentativas-livres: 5
+      bloqueio-inicial: 1m
+      bloqueio-maximo: 15m
+      esquecer-apos: 1h                          # sem tentativas por esse tempo, a contagem zera
     admin-inicial:
       # Criado na subida só se não houver nenhum ADMIN ativo; depois é ignorado.
       nome: ${HEALTHSTAFF_ADMIN_NOME:Administrador}

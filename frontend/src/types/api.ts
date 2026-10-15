@@ -252,6 +252,8 @@ export type CodigoErro =
   | "ACESSO_NEGADO"
   /** Login recusado (mesma resposta para e-mail inexistente, senha errada ou usuário inativo). */
   | "CREDENCIAIS_INVALIDAS"
+  /** Login bloqueado por excesso de tentativas sem acerto (429, `tentarNovamenteEmSegundos`). */
+  | "MUITAS_TENTATIVAS"
   /** Gestão de usuários (409/404). */
   | "EMAIL_JA_CADASTRADO"
   | "ULTIMO_ADMIN"
@@ -271,6 +273,8 @@ export interface ProblemDetail {
   codigo?: CodigoErro;
   /** Presente quando o erro se refere a um arquivo enviado. */
   arquivo?: string;
+  /** Em `MUITAS_TENTATIVAS`: segundos até poder tentar de novo (o mesmo do `Retry-After`). */
+  tentarNovamenteEmSegundos?: number;
 }
 
 // ---------------------------------------------------------------------------

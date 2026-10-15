@@ -19,20 +19,25 @@ class AuthController {
 
 	private final AuthenticationManager autenticacao;
 	private final TokenService tokens;
+	private final LimiteTentativasLogin limite;
 
-	AuthController(AuthenticationManager autenticacao, TokenService tokens) {
+	AuthController(AuthenticationManager autenticacao, TokenService tokens, LimiteTentativasLogin limite) {
 		this.autenticacao = autenticacao;
 		this.tokens = tokens;
+		this.limite = limite;
 	}
 
 	@PostMapping("/login")
 	TokenResponse login(@Valid @RequestBody LoginRequest login) {
+		// Antes de tudo: e-mail bloqueado recebe 429 sem nem passar pelo BCrypt.
+		limite.registrarTentativa(login.email());
 		if (PoliticaSenha.excedeLimite(login.senha())) {
 			throw new CredenciaisInvalidasException();
 		}
 		try {
 			var autenticado = autenticacao.authenticate(
 					UsernamePasswordAuthenticationToken.unauthenticated(login.email(), login.senha()));
+			limite.registrarAcerto(login.email());
 			return tokens.emitir((Usuario) autenticado.getPrincipal());
 		}
 		catch (AuthenticationException e) {

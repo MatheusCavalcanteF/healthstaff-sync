@@ -28,6 +28,7 @@ import br.com.healthstaff.backend.regras.AnaliseNaoEncontradaException;
 import br.com.healthstaff.backend.regras.SemEscalaVigenteException;
 import br.com.healthstaff.backend.seguranca.ConflitoUsuarioException;
 import br.com.healthstaff.backend.seguranca.CredenciaisInvalidasException;
+import br.com.healthstaff.backend.seguranca.TentativasExcedidasException;
 import br.com.healthstaff.backend.seguranca.UsuarioNaoEncontradoException;
 
 /**
@@ -137,6 +138,17 @@ class ErrosApiHandler {
 	@ExceptionHandler(CredenciaisInvalidasException.class)
 	ProblemDetail credenciaisInvalidas(CredenciaisInvalidasException e) {
 		return problema(HttpStatus.UNAUTHORIZED, "Login recusado", e.getMessage(), "CREDENCIAIS_INVALIDAS");
+	}
+
+	/** Login bloqueado por excesso de tentativas: {@code Retry-After} diz quando tentar de novo. */
+	@ExceptionHandler(TentativasExcedidasException.class)
+	ResponseEntity<ProblemDetail> tentativasExcedidas(TentativasExcedidasException e) {
+		var segundos = e.getSegundosParaNovaTentativa();
+		var problema = problema(HttpStatus.TOO_MANY_REQUESTS, "Muitas tentativas", e.getMessage(), "MUITAS_TENTATIVAS");
+		problema.setProperty("tentarNovamenteEmSegundos", segundos);
+		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+				.header(HttpHeaders.RETRY_AFTER, String.valueOf(segundos))
+				.body(problema);
 	}
 
 	/** Sem token, ou token inválido/expirado (vem dos filtros do Spring Security). */

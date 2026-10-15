@@ -119,6 +119,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Testes
+        run: npm test
+
       # Inclui a checagem de tipos do TypeScript.
       - name: Build
         run: npm run build

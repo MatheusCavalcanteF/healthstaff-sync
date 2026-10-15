@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { ApiError } from "@/lib/api/client";
 import { autenticar } from "@/lib/api/endpoints";
 import { destinoSeguro } from "@/lib/auth";
+import { formatarEspera, ipDoCliente, limiteLoginPorIp } from "@/lib/limite-login";
 import { encerrarSessao, gravarSessao } from "@/lib/sessao";
 
 export interface EstadoLogin {
@@ -21,15 +22,35 @@ export async function entrar(_anterior: EstadoLogin, formulario: FormData): Prom
     return { erro: "Informe o e-mail e a senha.", email };
   }
 
+  // Reservada antes de chamar o backend; só fica contada se a tentativa errar.
+  const ip = await ipDoCliente();
+  const reserva = limiteLoginPorIp.reservar(ip);
+  if (!reserva.permitida) {
+    return {
+      erro: `Muitas tentativas de login a partir desta rede. Tente de novo em ${formatarEspera(reserva.esperaSegundos)}.`,
+      email,
+    };
+  }
+
   try {
     const { token, expiraEm } = await autenticar(email, senha);
     await gravarSessao(token, expiraEm);
+    limiteLoginPorIp.devolver(ip);
   } catch (erro) {
+    if (erro instanceof ApiError && erro.codigo === "CREDENCIAIS_INVALIDAS") {
+      return { erro: "E-mail ou senha inválidos.", email };
+    }
+    if (erro instanceof ApiError && erro.codigo === "MUITAS_TENTATIVAS") {
+      const espera = erro.problema.tentarNovamenteEmSegundos;
+      return {
+        erro: `Muitas tentativas de login para este e-mail. Tente de novo${espera ? ` em ${formatarEspera(espera)}` : " mais tarde"}.`,
+        email,
+      };
+    }
+    // Demais falhas não são palpite de senha: não contam contra a rede.
+    limiteLoginPorIp.devolver(ip);
     if (!(erro instanceof ApiError)) {
       throw erro;
-    }
-    if (erro.codigo === "CREDENCIAIS_INVALIDAS") {
-      return { erro: "E-mail ou senha inválidos.", email };
     }
     if (erro.semConexao) {
       return { erro: "O servidor não respondeu. Verifique se o backend está no ar e tente novamente.", email };

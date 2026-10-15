@@ -274,7 +274,7 @@ Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `POST` | `/auth/login` | `{"email", "senha"}` → token JWT, validade (`expiraEm`) e dados do usuário |
+| `POST` | `/auth/login` | `{"email", "senha"}` → token JWT, validade (`expiraEm`) e dados do usuário. Após 5 tentativas sem acerto para o mesmo e-mail, 429 `MUITAS_TENTATIVAS` com `Retry-After` (bloqueio de 1 min que dobra a cada erro, até 15 min) |
 | `GET` | `/auth/eu` | Usuário do token |
 | `GET` | `/usuarios` | Usuários (só `ADMIN`), ativos e inativos |
 | `POST` | `/usuarios` | Cadastra (`nome`, `email`, `senha`, `perfil`); 409 `EMAIL_JA_CADASTRADO` se o e-mail existir |
@@ -290,7 +290,7 @@ Todas as rotas exigem `Authorization: Bearer <token>`, menos o login. Leitura (`
 
 **Respostas de importação:** `201` + `Location` (importação nova) ou `200` com `duplicada: true` (mesmo arquivo, inclusive em envio simultâneo).
 
-**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EMAIL_JA_CADASTRADO`, `ULTIMO_ADMIN` e `ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO` (404), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+**Erros** (Problem Details, RFC 9457, sempre com `codigo`): `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `ANALISE_NAO_ENCONTRADA`, `SEM_ESCALA_VIGENTE` (422), `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `MUITAS_TENTATIVAS` (429 com `Retry-After`, login), `EMAIL_JA_CADASTRADO`, `ULTIMO_ADMIN` e `ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO` (404), `EXTRATOR_INDISPONIVEL` (503) ou o código repassado pelo extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
 
 ### Python (interno, só o Java chama)
 
@@ -323,7 +323,7 @@ O workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) roda a cada pu
 | --- | --- | --- |
 | `java-backend` | JDK 25 (Temurin), cache do Maven | `./mvnw verify -B` (Postgres embutido, sem Docker); relatórios do Surefire como artefato se falhar |
 | `python-extractor` | Python 3.13 (o mesmo da imagem Docker), cache do pip | `pytest` e checagem de que `schema/` está em dia com os modelos (`python -m api.schema` sem diff) |
-| `next-frontend` | Node.js 24 LTS, cache do npm | `npm ci`, `npm run lint` e `npm run build` (inclui a checagem de tipos) |
+| `next-frontend` | Node.js 24 LTS, cache do npm | `npm ci`, `npm run lint`, `npm test` e `npm run build` (inclui a checagem de tipos) |
 
 A checagem do schema existe porque o backend gera o cliente do extrator a partir do `openapi.json` versionado: um modelo Python alterado sem regenerar o schema faria o Java compilar contra um contrato velho.
 
@@ -352,6 +352,7 @@ Os testes usam PostgreSQL 18 **embutido** (io.zonky), sem Docker. O `ExtratorCli
 ```powershell
 cd frontend
 npm run lint
+npm test        # unitários com o node --test nativo (src/**/*.test.ts)
 npm run build   # inclui a checagem de tipos
 ```
 

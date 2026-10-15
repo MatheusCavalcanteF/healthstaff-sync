@@ -22,7 +22,7 @@
   - `POST /api/v1/importacoes/escalas`: envia ao extrator a escala **e o cadastro já conhecido** (matrícula + nome de todos no banco), para o casamento aproximado de nomes funcionar com a escala sozinha.
   - `POST /api/v1/importacoes/ponto` (+ `dataReferencia` opcional, AAAA-MM-DD).
   - `GET /api/v1/importacoes/{id}`.
-  - 201 + `Location` (novo) | 200 com `duplicada: true` (mesmo arquivo, inclusive envio simultâneo). Erros em Problem Details (RFC 9457) sempre com `codigo`: `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `EMAIL_JA_CADASTRADO`/`ULTIMO_ADMIN`/`ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO`, `EXTRATOR_INDISPONIVEL` (503, sem detalhe interno) ou o código do extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
+  - 201 + `Location` (novo) | 200 com `duplicada: true` (mesmo arquivo, inclusive envio simultâneo). Erros em Problem Details (RFC 9457) sempre com `codigo`: `ARQUIVO_AUSENTE`, `ARQUIVO_INVALIDO`, `ARQUIVO_MUITO_GRANDE` (413), `PARAMETRO_INVALIDO`, `IMPORTACAO_NAO_ENCONTRADA`, `NAO_AUTENTICADO` (401), `ACESSO_NEGADO` (403), `CREDENCIAIS_INVALIDAS` (401, login), `MUITAS_TENTATIVAS` (429 + `Retry-After`, login), `EMAIL_JA_CADASTRADO`/`ULTIMO_ADMIN`/`ALTERACAO_PROPRIA_BLOQUEADA` (409), `USUARIO_NAO_ENCONTRADO`, `EXTRATOR_INDISPONIVEL` (503, sem detalhe interno) ou o código do extrator (`TIPO_INCOMPATIVEL`, `FORMATO_NAO_RECONHECIDO`...).
   - A chamada ao extrator fica fora da transação; a gravação é uma transação única.
 - **Endpoints do Python (internos, só o Java chama):**
   - `POST /extracoes`: multipart com `escala` e/ou `banco_horas`, `data_referencia_ponto` e `cadastro` (JSON `[{"matricula","nome"}]`) opcionais. O matcher usa o `cadastro` somado ao Banco de Horas enviado (este prevalece).
@@ -64,6 +64,7 @@
   - `UsuarioDoToken` recarrega o usuário do banco a cada requisição e compara a claim `ver` do token com `usuario.versao_credenciais`: trocar senha, e-mail ou perfil, ou desativar, incrementa a versão e derruba as sessões abertas na hora (reativar não ressuscita tokens antigos).
   - `UsuarioService`: e-mail único (409, também pelo unique do banco em corrida); sempre resta um ADMIN ativo (desativar ou rebaixar; os admins ativos ficam travados com `select ... for update`, então dois admins se desativando ao mesmo tempo não zeram o sistema); ninguém desativa a si mesmo nem tira o próprio perfil de ADMIN. Pela API, `ULTIMO_ADMIN` só é alcançável em corrida (quem chama é sempre outro admin ativo); `UsuarioServiceTest` cobre isso em paralelo.
   - Senha: `PoliticaSenha` (12 caracteres a 72 bytes, limite do BCrypt), a mesma para o admin inicial e para a API.
+  - Força bruta: `LimiteTentativasLogin` conta cada tentativa por e-mail **antes** de conferir a senha (paralelas não passam juntas); depois de `healthstaff.security.login.tentativas-livres` (5) sem acerto, 429 `MUITAS_TENTATIVAS` com `Retry-After`, bloqueio de 1 min que dobra a cada nova tentativa errada até 15 min; acerto zera; igual para e-mail sem conta. Em memória (cada instância conta à parte). O backend só vê o IP do servidor Next, por isso o limite por IP fica na Server Action do login.
   - 401/403 saem pelo `ErrosApiHandler` (os filtros delegam ao `handlerExceptionResolver`). Login recusado tem sempre a mesma resposta (e-mail inexistente, senha errada, inativo) e passa pelo BCrypt também para inativos (sem vazar a conta pelo tempo).
   - `HEALTHSTAFF_JWT_SECRET` é obrigatória (>= 32 bytes, sem padrão: o backend não sobe sem ela). Validade em `HEALTHSTAFF_JWT_EXPIRACAO` (padrão 8h, sem refresh).
   - **Nenhum usuário em migração** (senha no histórico do Git valeria em todo ambiente): `CriacaoAdminInicial` cria o primeiro ADMIN na subida a partir de `HEALTHSTAFF_ADMIN_EMAIL`/`HEALTHSTAFF_ADMIN_SENHA` (>= 12 caracteres), só se não houver ADMIN ativo.
@@ -73,17 +74,19 @@
 
 ## Desenvolvimento (frontend)
 - Next.js 16 (App Router) + React 19 + Tailwind 4 + TypeScript, em `frontend/`. **Next 16 tem mudanças incompatíveis**: ler `frontend/AGENTS.md` e a documentação em `frontend/node_modules/next/dist/docs/` antes de mexer em rotas (`params`/`searchParams` são Promises; `export const dynamic` não existe mais; renderização por requisição via `await connection()`).
-- Requer Node.js 24 LTS. `npm run lint` e `npm run build` (faz a checagem de tipos).
+- Requer Node.js 24 LTS. `npm run lint`, `npm test` e `npm run build` (faz a checagem de tipos).
+- Testes unitários: `node --test` nativo (sem dependência), em `src/**/*.test.ts`. O módulo testado não pode usar aliases (`@/`) nem sintaxe TypeScript não apagável (enum, parameter properties); o teste importa com a extensão `.ts` (`allowImportingTsExtensions`).
 - `src/types/api.ts` espelha os DTOs Java (atualizar junto quando um record de resposta mudar). `src/lib/api/client.ts`: toda falha vira `ApiError` com o `ProblemDetail` (`erro.codigo`; `SEM_CONEXAO` quando o backend não responde).
 - **Sessão:** o login é uma Server Action (`app/login/actions.ts`) que grava o JWT num cookie `httpOnly` + `SameSite=Lax` (`hs_sessao`, `lib/sessao.ts`, só no servidor). O navegador nunca vê o token nem fala direto com o backend:
   - Server Components chamam via `lib/api/endpoints.ts` (`server-only`; `apiServidor` acrescenta o Bearer; 401 `NAO_AUTENTICADO` -> `/login?motivo=sessao-expirada`).
   - O navegador (uploads, gestão de usuários) chama `lib/api/navegador.ts` -> `app/api/backend/[...caminho]` (repasse que lê o cookie; recusa `..` e `Sec-Fetch-Site: cross-site`).
+  - Login: além do limite por e-mail do backend, a Server Action limita 20 tentativas sem acerto por IP a cada 15 min (`lib/limite-login.ts`; login aceito não conta). O IP vem do `X-Real-IP` ou do último `X-Forwarded-For`: só é confiável atrás de um proxy reverso.
   - `src/proxy.ts` (antigo middleware) só confere se o cookie existe; `/api/` fica fora do matcher (o proxy bufferizaria uploads acima de 10 MB). Nome e perfil exibidos vêm do payload do JWT sem verificar a assinatura: só interface; quem barra é o backend.
 - Páginas de dados buscam no servidor (Server Components); depois de uma alteração no navegador, `router.refresh()` recarrega os dados. Erros de API viram `BannerErro` (`components/estado/Banner.tsx`, título por `codigo`). Datas exibidas no fuso `America/Sao_Paulo`, independente do fuso do servidor.
 - Erros esperados viram estados de tela: `ANALISE_NAO_ENCONTRADA` -> estado vazio com atalho para Importações; demais -> mensagem de erro (nunca confundir "sem dados" com "servidor fora").
 
 ## CI (GitHub Actions)
-- `.github/workflows/ci.yml`: push na `main` e PR para a `main`, três jobs paralelos (`java-backend` com `./mvnw verify -B`; `python-extractor` com `pytest` + `schema/` sem diff após `python -m api.schema`; `next-frontend` com `npm ci`, lint e build). Versões iguais às de produção: Java 25, Python 3.13 (Dockerfile), Node 24.
+- `.github/workflows/ci.yml`: push na `main` e PR para a `main`, três jobs paralelos (`java-backend` com `./mvnw verify -B`; `python-extractor` com `pytest` + `schema/` sem diff após `python -m api.schema`; `next-frontend` com `npm ci`, lint, `npm test` e build). Versões iguais às de produção: Java 25, Python 3.13 (Dockerfile), Node 24.
 - Mudou um modelo do extrator: regenerar e versionar o schema, senão o CI falha (o Java gera o cliente a partir dele).
 
 ## Dados sensíveis (LGPD)
