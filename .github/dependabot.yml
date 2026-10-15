@@ -41,6 +41,11 @@ updates:
       minor-e-patch:
         patterns: ["*"]
         update-types: [minor, patch]
+    ignore:
+      # Os tipos acompanham o runtime: Node.js 24 (CI, Dockerfile e CONTRIBUTING.md).
+      # Subir a major de @types/node só junto com a major do Node.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
