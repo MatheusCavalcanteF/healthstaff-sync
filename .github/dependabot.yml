@@ -46,6 +46,14 @@ updates:
       # Subir a major de @types/node só junto com a major do Node.
       - dependency-name: "@types/node"
         update-types: ["version-update:semver-major"]
+      # TypeScript 7: o typescript-eslint (via eslint-config-next 16.3) ainda não o suporta
+      # ("typescript-eslint does not support TS 7.0") e o lint quebra. Rever quando suportar.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      # ESLint 10: o eslint-plugin-react do eslint-config-next 16.3 usa context.getFilename(),
+      # removido no ESLint 10, e o lint quebra. Rever quando o eslint-config-next suportar.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
