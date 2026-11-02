@@ -1,8 +1,8 @@
 # Desenvolvimento e testes (não entram na imagem Docker).
 -r requirements.txt
 
-pytest==9.1.1
-httpx2==2.13.1
+pytest==9.2.0
+httpx2==2.16.0
 
 # Análise exploratória de exportações reais (não usado pelo código de produção).
-pandas==3.0.6
+pandas==3.1.0
