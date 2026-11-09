@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.1</version>
+		<version>4.1.2</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>br.com.healthstaff</groupId>
@@ -16,7 +16,7 @@
 
 	<properties>
 		<java.version>25</java.version>
-		<openapi-generator.version>7.26.0</openapi-generator.version>
+		<openapi-generator.version>7.27.0</openapi-generator.version>
 		<!-- Base para @{argLine} do surefire (ferramentas como JaCoCo acrescentam aqui). -->
 		<argLine></argLine>
 		<!-- Mesma versão do Postgres de produção (docker-compose: postgres:18). -->
